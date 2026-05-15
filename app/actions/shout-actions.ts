@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { shouts, hashtags, shoutHashtags, votes, reshouts, comments, users } from "@/lib/schema"
+import { shouts, hashtags, shoutHashtags, likes, reshouts, comments, users } from "@/lib/schema"
 import { eq, and, desc, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
@@ -33,7 +33,7 @@ export async function createShout(formData: FormData) {
         user_id: currentUser.id,
         content: content,
         image_url: imageUrl,
-        vote_count: 0,
+        vote_count: "0",
       })
       .returning()
 
@@ -86,7 +86,7 @@ export async function createShout(formData: FormData) {
         username: currentUser.username,
         avatar_url: currentUser.avatar_url,
         wallet_address: currentUser.wallet_address,
-        vote_count: 0,
+        vote_count: "0",
         comments_count: 0,
         reshouts_count: 0,
       },
@@ -115,7 +115,7 @@ export async function createShoutLegacy(userId: number, content: string, imageUr
         user_id: userId,
         content: content,
         image_url: imageUrl || null,
-        vote_count: 0,
+        vote_count: "0",
       })
       .returning()
 
@@ -286,87 +286,58 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
     .offset(offset)
 }
 
-// Updated to use votes instead of likes
+/** @deprecated Prefer toggleLikeShout from vote-actions (stake-weighted). */
 export async function likeShout(userId: number, shoutId: number) {
   try {
-    // Insert vote as upvote
     await db
-      .insert(votes)
+      .insert(likes)
       .values({
         user_id: userId,
         shout_id: shoutId,
-        vote_type: 1, // 1 for upvote
       })
-      .onConflictDoUpdate({
-        target: [votes.user_id, votes.shout_id],
-        set: { vote_type: 1 },
-      })
+      .onConflictDoNothing()
 
-    // Update shout vote count
-    await db
-      .update(shouts)
-      .set({
-        vote_count: sql`CASE 
-          WHEN EXISTS (SELECT 1 FROM votes WHERE user_id = ${userId} AND shout_id = ${shoutId} AND vote_type = -1) 
-          THEN ${shouts.vote_count} + 2 
-          ELSE ${shouts.vote_count} + 1 
-        END`,
-      })
-      .where(eq(shouts.id, shoutId))
+    const { recalculateShoutLikeTotal } = await import("@/lib/user-weight")
+    await recalculateShoutLikeTotal(shoutId)
 
-    // Get shout owner to create notification
     const shoutResult = await db.select({ user_id: shouts.user_id }).from(shouts).where(eq(shouts.id, shoutId))
 
     if (shoutResult.length > 0) {
-      const shoutOwnerId = shoutResult[0].user_id
-
-      // Create notification
       await createNotification({
-        userId: shoutOwnerId,
+        userId: shoutResult[0].user_id,
         actorId: userId,
-        type: "vote",
+        type: "like",
         shoutId,
-        vote_type: 1,
       })
     }
 
     revalidatePath("/")
     return true
   } catch (error) {
-    console.error("Error upvoting shout:", error)
+    console.error("Error liking shout:", error)
     return false
   }
 }
 
-// Updated to use votes instead of likes
+/** @deprecated Prefer toggleLikeShout from vote-actions (stake-weighted). */
 export async function unlikeShout(userId: number, shoutId: number) {
   try {
-    // Get current vote type
-    const currentVote = await db
-      .select({ vote_type: votes.vote_type })
-      .from(votes)
-      .where(and(eq(votes.user_id, userId), eq(votes.shout_id, shoutId)))
+    const currentLike = await db
+      .select({ user_id: likes.user_id })
+      .from(likes)
+      .where(and(eq(likes.user_id, userId), eq(likes.shout_id, shoutId)))
       .limit(1)
 
-    if (currentVote.length > 0) {
-      const voteType = currentVote[0].vote_type
-
-      // Delete the vote
-      await db.delete(votes).where(and(eq(votes.user_id, userId), eq(votes.shout_id, shoutId)))
-
-      // Update the shout vote count
-      await db
-        .update(shouts)
-        .set({
-          vote_count: sql`${shouts.vote_count} - ${voteType}`,
-        })
-        .where(eq(shouts.id, shoutId))
+    if (currentLike.length > 0) {
+      await db.delete(likes).where(and(eq(likes.user_id, userId), eq(likes.shout_id, shoutId)))
+      const { recalculateShoutLikeTotal } = await import("@/lib/user-weight")
+      await recalculateShoutLikeTotal(shoutId)
     }
 
     revalidatePath("/")
     return true
   } catch (error) {
-    console.error("Error removing vote:", error)
+    console.error("Error unliking shout:", error)
     return false
   }
 }
@@ -475,10 +446,8 @@ export async function getTrendingHashtags(limit = 5) {
     .limit(limit)
 }
 
-// Updated to use votes instead of likes
 export async function getUserLikedShouts(userId: number, limit = 10, offset = 0) {
   try {
-    // Use votes table instead of likes, filtering for upvotes (vote_type = 1)
     const result = await db
       .select({
         id: shouts.id,
@@ -486,18 +455,18 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         created_at: shouts.created_at,
         image_url: shouts.image_url,
         user_id: shouts.user_id,
-        username: sql<string>`users.username`,
-        avatar_url: sql<string>`users.avatar_url`,
+        username: users.username,
+        avatar_url: users.avatar_url,
         vote_count: shouts.vote_count,
         comments_count: count(comments.shout_id).as("comments_count"),
         reshouts_count: count(reshouts.shout_id).as("reshouts_count"),
       })
-      .from(shouts)
-      .innerJoin("users", eq(shouts.user_id, sql`users.id`))
-      .innerJoin(votes, eq(shouts.id, votes.shout_id))
+      .from(likes)
+      .innerJoin(shouts, eq(likes.shout_id, shouts.id))
+      .innerJoin(users, eq(shouts.user_id, users.id))
       .leftJoin(comments, eq(shouts.id, comments.shout_id))
       .leftJoin(reshouts, eq(shouts.id, reshouts.shout_id))
-      .where(and(eq(votes.user_id, userId), eq(votes.vote_type, 1))) // Only upvotes
+      .where(eq(likes.user_id, userId))
       .groupBy(
         shouts.id,
         shouts.content,
@@ -505,10 +474,10 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         shouts.image_url,
         shouts.user_id,
         shouts.vote_count,
-        sql`users.username`,
-        sql`users.avatar_url`,
+        users.username,
+        users.avatar_url,
       )
-      .orderBy(desc(votes.created_at))
+      .orderBy(desc(shouts.created_at))
       .limit(limit)
       .offset(offset)
 

@@ -129,7 +129,7 @@ export async function createShoutLegacy(userId: number, content: string, imageUr
         user_id: userId,
         content: content,
         image_url: imageUrl || null,
-        vote_count: 0,
+        vote_count: "0",
       })
       .returning()
 
@@ -296,23 +296,23 @@ export async function likeShout(userId: number, shoutId: number) {
   try {
     await executeQuery(
       `
-      INSERT INTO votes (user_id, shout_id, vote_type)
-      VALUES ($1, $2, 1)
-      ON CONFLICT (user_id, shout_id) DO UPDATE SET vote_type = 1
+      INSERT INTO likes (user_id, shout_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, shout_id) DO NOTHING
     `,
       [userId, shoutId],
     )
 
-    // Update the shout vote count
     await executeQuery(
       `
-      UPDATE shouts
-      SET like_count = CASE 
-        WHEN EXISTS (SELECT 1 FROM votes WHERE user_id = $1 AND shout_id = $2 AND vote_type = -1) 
-        THEN like_count + 2 
-        ELSE like_count + 1 
-      END
-      WHERE id = $2
+      UPDATE shouts s
+      SET like_count = (
+        SELECT COALESCE(SUM(u.weight::numeric), 0)
+        FROM likes l
+        INNER JOIN users u ON l.user_id = u.id
+        WHERE l.shout_id = s.id
+      )
+      WHERE s.id = $2
     `,
       [userId, shoutId],
     )
@@ -329,32 +329,33 @@ export async function unlikeShout(userId: number, shoutId: number) {
     // Get current vote type
     const voteResult = await executeQuery(
       `
-      SELECT vote_type FROM votes
+      SELECT 1 FROM likes
       WHERE user_id = $1 AND shout_id = $2
     `,
       [userId, shoutId],
     )
 
     if (voteResult.length > 0) {
-      const voteType = voteResult[0].vote_type
-
-      // Delete the vote
       await executeQuery(
         `
-        DELETE FROM votes
+        DELETE FROM likes
         WHERE user_id = $1 AND shout_id = $2
       `,
         [userId, shoutId],
       )
 
-      // Update the shout vote count
       await executeQuery(
         `
-        UPDATE shouts
-        SET like_count = like_count - $3
-        WHERE id = $2
+        UPDATE shouts s
+        SET like_count = (
+          SELECT COALESCE(SUM(u.weight::numeric), 0)
+          FROM likes l
+          INNER JOIN users u ON l.user_id = u.id
+          WHERE l.shout_id = s.id
+        )
+        WHERE s.id = $2
       `,
-        [userId, shoutId, voteType],
+        [userId, shoutId],
       )
     }
 
@@ -494,9 +495,9 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count
       FROM shouts s
       JOIN users u ON s.user_id = u.id
-      JOIN votes v ON s.id = v.shout_id
-      WHERE v.user_id = $1 AND v.vote_type = 1
-      ORDER BY v.created_at DESC
+      JOIN likes l ON s.id = l.shout_id
+      WHERE l.user_id = $1
+      ORDER BY s.created_at DESC
       LIMIT $2 OFFSET $3
     `,
       [userId, limit, offset],

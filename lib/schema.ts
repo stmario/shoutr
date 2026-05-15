@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, integer, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, serial, text, timestamp, boolean, integer, numeric, primaryKey } from "drizzle-orm/pg-core"
 
 // Users table
 export const users = pgTable("users", {
@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   website: text("website"),
   avatar_url: text("avatar_url"),
   wallet_address: text("wallet_address").unique(),
+  weight: numeric("weight", { precision: 78, scale: 0 }).default("0").notNull(), // staked SHOT in wei (like power)
   is_verified: boolean("is_verified").default(false).notNull(),
   verification_token: text("verification_token"),
   reset_token: text("reset_token"),
@@ -26,14 +27,14 @@ export const shouts = pgTable("shouts", {
     .references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   image_url: text("image_url"),
-  vote_count: integer("like_count").default(0),
+  vote_count: numeric("like_count", { precision: 78, scale: 0 }).default("0"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 })
 
-// Votes table (replacing likes)
-export const votes = pgTable(
-  "votes",
+// Likes table (like power comes from users.weight = currently staked SHOT)
+export const likes = pgTable(
+  "likes",
   {
     user_id: integer("user_id")
       .notNull()
@@ -41,9 +42,6 @@ export const votes = pgTable(
     shout_id: integer("shout_id")
       .notNull()
       .references(() => shouts.id, { onDelete: "cascade" }),
-    vote_type: integer("vote_type").notNull(), // 1 for upvote, -1 for downvote
-    created_at: timestamp("created_at").defaultNow().notNull(),
-    updated_at: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => {
     return {

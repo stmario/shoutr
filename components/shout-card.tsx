@@ -1,19 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, MessageCircle, Repeat2, Bookmark } from "lucide-react"
+import { Heart, MessageCircle, Repeat2, Bookmark } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { formatDistanceToNow } from "date-fns"
 import { reshout } from "@/app/actions/shouts"
-import { voteOnShout, getUserVote } from "@/app/actions/vote-actions"
+import { toggleLikeShout, getShoutLikeStatus, getUserStakedLikePower } from "@/app/actions/vote-actions"
 import { addBookmark, removeBookmark, isBookmarked } from "@/app/actions/bookmark-actions"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import Image from "next/image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { voteOnPost, getVoteCount, getUserVote as getBlockchainUserVote } from "@/lib/contract"
+import { formatLikeWeightShot, LIKE_CURRENCY } from "@/lib/like-weight"
 
 interface ShoutCardProps {
   shout: {
@@ -25,7 +25,7 @@ interface ShoutCardProps {
     username: string
     avatar_url?: string
     wallet_address?: string | null
-    vote_count: number
+    vote_count: number | string
     comments_count: number
     reshouts_count: number
   }
@@ -38,129 +38,88 @@ interface ShoutCardProps {
 export function ShoutCard({
   shout,
   currentUserId,
-  currentUserWallet,
+  currentUserWallet: _currentUserWallet,
   isReshouted = false,
   isBookmarked: initialIsBookmarked = false,
 }: ShoutCardProps) {
-  const [voteCount, setVoteCount] = useState(Number(shout.vote_count) || 0)
+  const initialTotal = shout.vote_count?.toString() ?? "0"
+  const [likeTotalWei, setLikeTotalWei] = useState(initialTotal)
+  const [liked, setLiked] = useState(false)
+  const [userLikeWeightWei, setUserLikeWeightWei] = useState("0")
+  const [stakedLikePower, setStakedLikePower] = useState<string | null>(null)
   const [commentCount, setCommentCount] = useState(Number(shout.comments_count) || 0)
   const [reshoutCount, setReshoutCount] = useState(Number(shout.reshouts_count) || 0)
-  const [userVote, setUserVote] = useState<number>(0) // 0 for no vote, 1 for upvote, -1 for downvote
   const [reshouted, setReshouted] = useState(isReshouted)
   const [bookmarked, setBookmarked] = useState(initialIsBookmarked)
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
-  const [isVoteLoading, setIsVoteLoading] = useState(false)
+  const [isLikeLoading, setIsLikeLoading] = useState(false)
   const { toast } = useToast()
 
-  // Check bookmark and vote status on mount
   useEffect(() => {
     const checkStatus = async () => {
-      if (currentUserId) {
-        // Check bookmark status
-        if (initialIsBookmarked === false) {
-          const bookmarkStatus = await isBookmarked(shout.id)
-          setBookmarked(bookmarkStatus)
-        }
+      if (!currentUserId) return
 
-        // Check vote status from database
-        const voteStatus = await getUserVote(shout.id)
-        setUserVote(voteStatus)
+      if (initialIsBookmarked === false) {
+        const bookmarkStatus = await isBookmarked(shout.id)
+        setBookmarked(bookmarkStatus)
+      }
 
-        // If wallet is connected, check blockchain vote status
-        if (currentUserWallet) {
-          try {
-            // Get vote count from blockchain
-            const blockchainVoteCount = await getVoteCount(shout.id.toString())
-            if (blockchainVoteCount !== voteCount) {
-              setVoteCount(blockchainVoteCount)
-            }
+      const likeStatus = await getShoutLikeStatus(shout.id)
+      setLiked(likeStatus.liked)
+      setUserLikeWeightWei(likeStatus.userWeightWei)
+      setLikeTotalWei(likeStatus.totalWeightWei)
 
-            // Get user vote from blockchain
-            const blockchainUserVote = await getBlockchainUserVote(shout.id.toString(), currentUserWallet)
-            if (blockchainUserVote !== 0 && blockchainUserVote !== voteStatus) {
-              setUserVote(blockchainUserVote)
-            }
-          } catch (error) {
-            console.error("Error fetching blockchain data:", error)
-          }
-        }
+      const power = await getUserStakedLikePower()
+      if (power.success && power.formatted !== undefined) {
+        setStakedLikePower(power.formatted)
       }
     }
 
-    checkStatus()
-  }, [shout.id, currentUserId, currentUserWallet, initialIsBookmarked, voteCount])
+    void checkStatus()
+  }, [shout.id, currentUserId, initialIsBookmarked])
 
   const formattedDate = formatDistanceToNow(new Date(shout.created_at), { addSuffix: true })
+  const likeDisplay = formatLikeWeightShot(likeTotalWei)
 
-  const handleVote = async (voteType: 1 | -1) => {
-    if (!currentUserId || isVoteLoading) return
+  const handleLike = async () => {
+    if (!currentUserId || isLikeLoading) return
 
-    setIsVoteLoading(true)
+    setIsLikeLoading(true)
+    const prevLiked = liked
+    const prevTotal = likeTotalWei
+    const prevUserWeight = userLikeWeightWei
+
     try {
-      // If user clicked the same vote type they already selected, treat as removing vote
-      const newVoteType = userVote === voteType ? 0 : voteType
-
-      // Update UI optimistically
-      if (newVoteType === 0) {
-        // Removing vote
-        setVoteCount((prev) => prev - voteType)
-        setUserVote(0)
-      } else if (userVote === 0) {
-        // New vote
-        setVoteCount((prev) => prev + voteType)
-        setUserVote(voteType)
-      } else {
-        // Changing vote
-        setVoteCount((prev) => prev - userVote + voteType)
-        setUserVote(voteType)
-      }
-
-      // Submit to database
-      const result = await voteOnShout(shout.id, voteType)
+      const result = await toggleLikeShout(shout.id)
 
       if (!result.success) {
-        // Revert UI changes if database update fails
         toast({
-          title: "Error",
-          description: result.message || "Failed to vote",
+          title: "Cannot like",
+          description: result.message || "Failed to like",
           variant: "destructive",
         })
-        // Reset to previous state
-        setUserVote(userVote)
-        setVoteCount(voteCount)
         return
       }
 
-      // If wallet is connected, submit to blockchain
-      if (currentUserWallet) {
-        try {
-          const blockchainResult = await voteOnPost(shout.id.toString(), voteType === 1, currentUserWallet)
+      setLiked(result.liked ?? false)
+      if (result.totalWeightWei !== undefined) setLikeTotalWei(result.totalWeightWei)
+      if (result.userWeightWei !== undefined) setUserLikeWeightWei(result.userWeightWei)
 
-          if (!blockchainResult.success) {
-            toast({
-              title: "Blockchain Error",
-              description: "Vote recorded in database but blockchain update failed",
-              variant: "destructive",
-            })
-          }
-        } catch (error) {
-          console.error("Blockchain vote error:", error)
-          toast({
-            title: "Blockchain Error",
-            description: "Vote recorded in database but blockchain update failed",
-            variant: "destructive",
-          })
-        }
+      if (result.liked && result.message) {
+        toast({ title: "Liked", description: result.message })
       }
     } catch (error) {
-      console.error("Error voting:", error)
+      console.error("Error liking:", error)
+      setLiked(prevLiked)
+      setLikeTotalWei(prevTotal)
+      setUserLikeWeightWei(prevUserWeight)
       toast({
         title: "Error",
         description: "An unexpected error occurred",
         variant: "destructive",
       })
     } finally {
-      setIsVoteLoading(false)
+      setIsLikeLoading(false)
     }
   }
 
@@ -280,35 +239,39 @@ export function ShoutCard({
         )}
       </CardContent>
       <CardFooter className="p-2 pl-[4.5rem] flex justify-between">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`${
-              userVote === 1 ? "text-green-500" : "text-muted-foreground"
-            } hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-950`}
-            onClick={() => handleVote(1)}
-            disabled={!currentUserId || isVoteLoading}
-          >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
-          <span
-            className={`text-sm font-medium ${voteCount > 0 ? "text-green-500" : voteCount < 0 ? "text-red-500" : ""}`}
-          >
-            {voteCount}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`${
-              userVote === -1 ? "text-red-500" : "text-muted-foreground"
-            } hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950`}
-            onClick={() => handleVote(-1)}
-            disabled={!currentUserId || isVoteLoading}
-          >
-            <ArrowDown className="h-4 w-4" />
-          </Button>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`${
+                liked ? "text-red-500" : "text-muted-foreground"
+              } hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950`}
+              onClick={handleLike}
+              disabled={!currentUserId || isLikeLoading}
+            >
+              <Heart className={`h-4 w-4 mr-1 ${liked ? "fill-red-500" : ""}`} />
+              <span className="text-xs font-medium">{likeDisplay}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {currentUserId ? (
+              liked ? (
+                <span>
+                  You liked with {formatLikeWeightShot(userLikeWeightWei)} staked
+                  {stakedLikePower ? ` · Current stake: ${stakedLikePower}` : ""}
+                </span>
+              ) : (
+                <span>
+                  Like with your staked {LIKE_CURRENCY}
+                  {stakedLikePower ? ` (${stakedLikePower} staked)` : ""}
+                </span>
+              )
+            ) : (
+              "Sign in to like"
+            )}
+          </TooltipContent>
+        </Tooltip>
         <Button
           variant="ghost"
           size="sm"

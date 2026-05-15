@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { refreshMyLikePower } from "@/app/actions/vote-actions"
 import {
   approveStaking,
   connectWallet,
@@ -197,6 +198,7 @@ export function StakingPanel() {
       setAmount("")
       setIsLoading(true)
       await refresh(address)
+      await refreshMyLikePower()
     } finally {
       setIsSubmitting(false)
     }
@@ -222,6 +224,7 @@ export function StakingPanel() {
       setTxHash(result.txHash)
       setIsLoading(true)
       await refresh(address)
+      await refreshMyLikePower()
     } finally {
       setIsSubmitting(false)
     }
