@@ -99,7 +99,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     <Link
       href={getNotificationLink()}
       className={`flex items-start gap-3 p-4 hover:bg-muted transition-colors ${
-        !notification.is_read ? "bg-muted/50" : ""
+        !notification.is_read ? "bg-muted/50 border-l-2 border-l-purple-600" : ""
       }`}
     >
       <Avatar className="h-10 w-10">
@@ -116,6 +116,12 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         </div>
         <span className="text-xs text-muted-foreground mt-1">{formattedDate}</span>
       </div>
+      {!notification.is_read && (
+        <span
+          className="mt-2 h-2 w-2 shrink-0 rounded-full bg-purple-600"
+          aria-label="Unread notification"
+        />
+      )}
     </Link>
   )
 }

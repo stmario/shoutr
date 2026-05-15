@@ -24,7 +24,10 @@ export function UserList({ users, currentUserId }: UserListProps) {
 
     setLoadingState((prev) => ({ ...prev, [userId]: true }))
     try {
-      await followUser(currentUserId, userId)
+      const result = await followUser(userId)
+      if (result.error) {
+        throw new Error(result.error)
+      }
       setFollowingState((prev) => ({ ...prev, [userId]: true }))
       toast({
         title: "Success",

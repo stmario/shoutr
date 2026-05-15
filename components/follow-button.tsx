@@ -4,38 +4,45 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { followUser, unfollowUser } from "@/app/actions/user-actions"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 interface FollowButtonProps {
-  currentUserId: number
   profileUserId: number
   initialIsFollowing: boolean
+  size?: "default" | "sm"
 }
 
-export function FollowButton({ currentUserId, profileUserId, initialIsFollowing }: FollowButtonProps) {
+export function FollowButton({ profileUserId, initialIsFollowing, size = "default" }: FollowButtonProps) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleToggleFollow = async () => {
     if (isLoading) return
 
     setIsLoading(true)
     try {
-      if (isFollowing) {
-        await unfollowUser(currentUserId, profileUserId)
-        setIsFollowing(false)
+      const result = isFollowing ? await unfollowUser(profileUserId) : await followUser(profileUserId)
+
+      if (result.error) {
         toast({
-          title: "Unfollowed",
-          description: "You are no longer following this user.",
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
         })
-      } else {
-        await followUser(currentUserId, profileUserId)
-        setIsFollowing(true)
-        toast({
-          title: "Following",
-          description: "You are now following this user.",
-        })
+        return
       }
+
+      const nowFollowing = !isFollowing
+      setIsFollowing(nowFollowing)
+      toast({
+        title: nowFollowing ? "Following" : "Unfollowed",
+        description: nowFollowing
+          ? "You are now following this user."
+          : "You are no longer following this user.",
+      })
+      router.refresh()
     } catch (error) {
       console.error("Error toggling follow:", error)
       toast({
@@ -50,12 +57,13 @@ export function FollowButton({ currentUserId, profileUserId, initialIsFollowing 
 
   return (
     <Button
+      size={size}
       variant={isFollowing ? "outline" : "default"}
       className={isFollowing ? "" : "bg-purple-700 hover:bg-purple-800"}
       onClick={handleToggleFollow}
       disabled={isLoading}
     >
-      {isLoading ? "Loading..." : isFollowing ? "Unfollow" : "Follow"}
+      {isLoading ? "Loading..." : isFollowing ? "Following" : "Follow"}
     </Button>
   )
 }

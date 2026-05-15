@@ -7,21 +7,32 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoutButton } from "@/components/logout-button"
+import { UnreadDot } from "@/components/unread-dot"
 
 type MobileMenuProps = {
   user: any
-  unreadNotificationCount: number
+  hasUnreadNotifications: boolean
   unreadMessageCount: number
 }
 
-export function MobileMenu({ user, unreadNotificationCount, unreadMessageCount }: MobileMenuProps) {
+export function MobileMenu({ user, hasUnreadNotifications, unreadMessageCount }: MobileMenuProps) {
   const [open, setOpen] = useState(false)
 
   const navItems = [
     { icon: Home, label: "Home", href: "/" },
     { icon: Search, label: "Explore", href: "/explore" },
-    { icon: Bell, label: "Notifications", href: "/notifications", badge: unreadNotificationCount },
-    { icon: Mail, label: "Messages", href: "/messages", badge: unreadMessageCount },
+    {
+      icon: Bell,
+      label: "Notifications",
+      href: "/notifications",
+      showDot: hasUnreadNotifications,
+    },
+    {
+      icon: Mail,
+      label: "Messages",
+      href: "/messages",
+      badge: unreadMessageCount,
+    },
     { icon: Bookmark, label: "Bookmarks", href: "/bookmarks" },
     { icon: Coins, label: "Staking", href: "/staking" },
     { icon: User, label: "Profile", href: user ? `/profile/${user.username}` : "/profile" },
@@ -31,9 +42,12 @@ export function MobileMenu({ user, unreadNotificationCount, unreadMessageCount }
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button variant="ghost" size="icon" className="md:hidden relative">
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
+          {hasUnreadNotifications && <UnreadDot className="-top-0.5 -right-0.5" />}
+          <span className="sr-only">
+            {hasUnreadNotifications ? "Toggle menu (unread notifications)" : "Toggle menu"}
+          </span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[80%] max-w-[300px] p-0">
@@ -64,8 +78,9 @@ export function MobileMenu({ user, unreadNotificationCount, unreadMessageCount }
                 >
                   <div className="relative">
                     <item.icon className="h-5 w-5" />
-                    {item.badge && item.badge > 0 && (
-                      <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+                    {item.showDot && <UnreadDot />}
+                    {item.badge != null && item.badge > 0 && (
+                      <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-700 text-[10px] font-medium text-white">
                         {item.badge > 99 ? "99+" : item.badge}
                       </div>
                     )}

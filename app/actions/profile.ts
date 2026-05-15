@@ -32,10 +32,13 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
         (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
         (SELECT COUNT(*) FROM shouts WHERE user_id = u.id) as shouts_count,
         (
-          SELECT EXISTS(
-            SELECT 1 FROM follows 
-            WHERE follower_id = $2 AND following_id = u.id
-          )
+          CASE
+            WHEN $2::integer IS NULL THEN false
+            ELSE EXISTS(
+              SELECT 1 FROM follows
+              WHERE follower_id = $2 AND following_id = u.id
+            )
+          END
         ) as is_following
       FROM users u
       WHERE u.username = $1
@@ -86,49 +89,91 @@ export async function getUserShouts(userId: number, limit = 10, offset = 0) {
   }
 }
 
-export async function followUser(followingId: number) {
+export type FollowListUser = {
+  id: number
+  username: string
+  bio: string | null
+  avatar_url: string | null
+  is_following: boolean
+}
+
+async function getProfileUserId(username: string): Promise<number | null> {
+  const rows = await executeQuery(`SELECT id FROM users WHERE username = $1`, [username])
+  return rows[0]?.id ?? null
+}
+
+export async function getFollowers(username: string, limit = 30, offset = 0): Promise<FollowListUser[]> {
   try {
+    const profileId = await getProfileUserId(username)
+    if (!profileId) return []
+
     const currentUser = await getCurrentUser()
+    const viewerId = currentUser?.id ?? null
 
-    if (!currentUser) {
-      return { error: "You must be logged in to follow users" }
-    }
-
-    await executeQuery(
+    const result = await executeQuery(
       `
-      INSERT INTO follows (follower_id, following_id)
-      VALUES ($1, $2)
-      ON CONFLICT (follower_id, following_id) DO NOTHING
+      SELECT
+        u.id,
+        u.username,
+        u.bio,
+        u.avatar_url,
+        CASE
+          WHEN $4::integer IS NULL THEN false
+          ELSE EXISTS(
+            SELECT 1 FROM follows
+            WHERE follower_id = $4 AND following_id = u.id
+          )
+        END AS is_following
+      FROM follows f
+      JOIN users u ON u.id = f.follower_id
+      WHERE f.following_id = $1
+      ORDER BY f.created_at DESC
+      LIMIT $2 OFFSET $3
     `,
-      [currentUser.id, followingId],
+      [profileId, limit, offset, viewerId],
     )
 
-    return { success: true }
+    return result as FollowListUser[]
   } catch (error) {
-    console.error("Error following user:", error)
-    return { error: "Failed to follow user" }
+    console.error("Error fetching followers:", error)
+    return []
   }
 }
 
-export async function unfollowUser(followingId: number) {
+export async function getFollowing(username: string, limit = 30, offset = 0): Promise<FollowListUser[]> {
   try {
+    const profileId = await getProfileUserId(username)
+    if (!profileId) return []
+
     const currentUser = await getCurrentUser()
+    const viewerId = currentUser?.id ?? null
 
-    if (!currentUser) {
-      return { error: "You must be logged in to unfollow users" }
-    }
-
-    await executeQuery(
+    const result = await executeQuery(
       `
-      DELETE FROM follows
-      WHERE follower_id = $1 AND following_id = $2
+      SELECT
+        u.id,
+        u.username,
+        u.bio,
+        u.avatar_url,
+        CASE
+          WHEN $4::integer IS NULL THEN false
+          ELSE EXISTS(
+            SELECT 1 FROM follows
+            WHERE follower_id = $4 AND following_id = u.id
+          )
+        END AS is_following
+      FROM follows f
+      JOIN users u ON u.id = f.following_id
+      WHERE f.follower_id = $1
+      ORDER BY f.created_at DESC
+      LIMIT $2 OFFSET $3
     `,
-      [currentUser.id, followingId],
+      [profileId, limit, offset, viewerId],
     )
 
-    return { success: true }
+    return result as FollowListUser[]
   } catch (error) {
-    console.error("Error unfollowing user:", error)
-    return { error: "Failed to unfollow user" }
+    console.error("Error fetching following:", error)
+    return []
   }
 }

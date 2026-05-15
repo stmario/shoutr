@@ -43,7 +43,7 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
                 </Link>
               </Button>
             ) : (
-              <FollowButton userId={profile.id} isFollowing={profile.is_following} />
+              <FollowButton profileUserId={profile.id} initialIsFollowing={profile.is_following} />
             )}
           </div>
         </div>

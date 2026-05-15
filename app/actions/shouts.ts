@@ -22,24 +22,99 @@ export type Shout = {
   reshouts_count: number
 }
 
+const SHOUT_SELECT = `
+  SELECT 
+    s.id, 
+    s.content, 
+    s.created_at, 
+    s.image_url,
+    s.user_id,
+    u.username,
+    u.avatar_url,
+    u.wallet_address,
+    s.like_count::text as vote_count,
+    (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
+    (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count
+  FROM shouts s
+  JOIN users u ON s.user_id = u.id
+`
+
+export type HomeFeed = {
+  following: Shout[]
+  discover: Shout[]
+}
+
+async function getFollowingShouts(userId: number, limit: number, offset: number): Promise<Shout[]> {
+  const result = await executeQuery(
+    `${SHOUT_SELECT}
+    WHERE s.user_id IN (
+      SELECT following_id FROM follows WHERE follower_id = $3
+      UNION
+      SELECT $3
+    )
+    ORDER BY s.created_at DESC
+    LIMIT $1 OFFSET $2
+  `,
+    [limit, offset, userId],
+  )
+  return result as Shout[]
+}
+
+async function getDiscoverShouts(userId: number, limit: number, offset: number): Promise<Shout[]> {
+  const result = await executeQuery(
+    `${SHOUT_SELECT}
+    WHERE s.user_id NOT IN (
+      SELECT following_id FROM follows WHERE follower_id = $3
+      UNION
+      SELECT $3
+    )
+    ORDER BY COALESCE(s.like_count, 0) DESC, s.created_at DESC
+    LIMIT $1 OFFSET $2
+  `,
+    [limit, offset, userId],
+  )
+  return result as Shout[]
+}
+
+export async function getHomeFeed(
+  followingLimit = 10,
+  followingOffset = 0,
+  discoverLimit = 10,
+  discoverOffset = 0,
+): Promise<HomeFeed> {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return { following: [], discover: [] }
+    }
+
+    const [following, discover] = await Promise.all([
+      followingLimit > 0
+        ? getFollowingShouts(currentUser.id, followingLimit, followingOffset)
+        : Promise.resolve([]),
+      discoverLimit > 0
+        ? getDiscoverShouts(currentUser.id, discoverLimit, discoverOffset)
+        : Promise.resolve([]),
+    ])
+
+    return { following, discover }
+  } catch (error) {
+    console.error("Error fetching home feed:", error)
+    return { following: [], discover: [] }
+  }
+}
+
 export async function getShouts(limit = 10, offset = 0): Promise<Shout[]> {
   try {
+    const currentUser = await getCurrentUser()
+
+    if (currentUser) {
+      const { following, discover } = await getHomeFeed(limit, offset, limit, offset)
+      return mergeUniqueShoutsById([...following, ...discover])
+    }
+
     const result = await executeQuery(
-      `
-      SELECT 
-        s.id, 
-        s.content, 
-        s.created_at, 
-        s.image_url,
-        s.user_id,
-        u.username,
-        u.avatar_url,
-        u.wallet_address,
-        s.like_count::text as vote_count,
-        (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
-        (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count
-      FROM shouts s
-      JOIN users u ON s.user_id = u.id
+      `${SHOUT_SELECT}
       ORDER BY s.created_at DESC
       LIMIT $1 OFFSET $2
     `,
@@ -51,6 +126,15 @@ export async function getShouts(limit = 10, offset = 0): Promise<Shout[]> {
     console.error("Error fetching shouts:", error)
     return []
   }
+}
+
+function mergeUniqueShoutsById(shouts: Shout[]): Shout[] {
+  const seen = new Set<number>()
+  return shouts.filter((s) => {
+    if (seen.has(s.id)) return false
+    seen.add(s.id)
+    return true
+  })
 }
 
 export async function createShout(content: string, imageUrl?: string) {

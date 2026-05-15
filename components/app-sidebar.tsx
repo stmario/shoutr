@@ -25,6 +25,7 @@ import { getUnreadNotificationCount } from "@/app/actions/notification-actions"
 import { getUnreadMessageCount } from "@/app/actions/message-actions"
 import { MobileMenu } from "./mobile-menu"
 import { LogoutButton } from "./logout-button"
+import { UnreadDot } from "./unread-dot"
 
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
@@ -39,8 +40,11 @@ const navItems = [
 
 export async function AppSidebar() {
   const user = await getCurrentUser()
-  const unreadNotificationCount = user ? await getUnreadNotificationCount() : 0
+  const { count: unreadNotificationCount } = user
+    ? await getUnreadNotificationCount()
+    : { count: 0 }
   const unreadMessageCount = user ? await getUnreadMessageCount() : 0
+  const hasUnreadNotifications = unreadNotificationCount > 0
 
   return (
     <>
@@ -53,7 +57,7 @@ export async function AppSidebar() {
         </Link>
         <MobileMenu
           user={user}
-          unreadNotificationCount={unreadNotificationCount}
+          hasUnreadNotifications={hasUnreadNotifications}
           unreadMessageCount={unreadMessageCount}
         />
       </div>
@@ -80,11 +84,7 @@ export async function AppSidebar() {
                   >
                     <div className="relative">
                       <item.icon className="h-5 w-5" />
-                      {item.hasBadge === "notifications" && unreadNotificationCount > 0 && (
-                        <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-                          {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
-                        </div>
-                      )}
+                      {item.hasBadge === "notifications" && hasUnreadNotifications && <UnreadDot />}
                       {item.hasBadge === "messages" && unreadMessageCount > 0 && (
                         <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-700 text-[10px] font-medium text-white">
                           {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
@@ -92,11 +92,6 @@ export async function AppSidebar() {
                       )}
                     </div>
                     <span>{item.label}</span>
-                    {item.hasBadge === "notifications" && unreadNotificationCount > 0 && (
-                      <span className="ml-auto text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
-                        {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
-                      </span>
-                    )}
                     {item.hasBadge === "messages" && unreadMessageCount > 0 && (
                       <span className="ml-auto text-xs bg-purple-700 text-white px-2 py-0.5 rounded-full">
                         {unreadMessageCount > 99 ? "99+" : unreadMessageCount}

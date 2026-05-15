@@ -21,7 +21,12 @@ export default async function NotificationsPage() {
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 backdrop-blur px-4">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
-          <h1 className="text-xl font-bold">Notifications</h1>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            Notifications
+            {unreadCount > 0 && (
+              <span className="h-2 w-2 rounded-full bg-purple-600" aria-label={`${unreadCount} unread`} />
+            )}
+          </h1>
         </div>
         {unreadCount > 0 && (
           <form action={markNotificationsAsRead}>

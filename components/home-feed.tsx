@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { ComposeShout } from "@/components/compose-shout"
-import { ShoutList } from "@/components/shout-list"
+import { HomeShoutList } from "@/components/home-shout-list"
 
 interface HomeFeedProps {
   userId: number
@@ -22,7 +22,7 @@ export function HomeFeed({ userId, username, avatarUrl }: HomeFeedProps) {
           onShoutCreated={() => setRefreshKey((k) => k + 1)}
         />
       </div>
-      <ShoutList userId={userId} refreshKey={refreshKey} />
+      <HomeShoutList userId={userId} refreshKey={refreshKey} />
     </>
   )
 }
