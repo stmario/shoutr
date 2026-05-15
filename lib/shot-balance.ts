@@ -1,37 +1,13 @@
 import { ethers } from "ethers"
 import icoAbi from "./ICOABI.json"
-import { createStaticJsonRpcProvider, getConfiguredChainId } from "./ethers-read-provider"
+import {
+  collectRpcUrls,
+  createStaticJsonRpcProvider,
+  parseUserRpcUrls,
+  shouldAppendSepoliaFallbacks,
+} from "./ethers-read-provider"
 
 const erc20BalanceAbi = ["function balanceOf(address account) view returns (uint256)"]
-
-/** Public read-only Sepolia RPCs appended when URL or chain indicates Sepolia (unless `ETHEREUM_RPC_NO_DEFAULT_FALLBACKS=1`). */
-const SEPOLIA_DEFAULT_RPCS = [
-  "https://ethereum-sepolia.publicnode.com",
-  "https://1rpc.io/sepolia",
-] as const
-
-function shouldAppendSepoliaFallbacks(userUrls: string[]): boolean {
-  if (process.env.ETHEREUM_RPC_NO_DEFAULT_FALLBACKS === "1") return false
-  if (getConfiguredChainId() === 11155111) return true
-  return userUrls.some((u) => /sepolia/i.test(u))
-}
-
-function parseUserRpcUrls(): string[] {
-  const raw = process.env.ETHEREUM_RPC_URL || process.env.NEXT_PUBLIC_ETHEREUM_PROVIDER_URL || ""
-  return raw.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean)
-}
-
-function collectRpcUrls(userUrls: string[]): string[] {
-  const defaults = shouldAppendSepoliaFallbacks(userUrls) ? [...SEPOLIA_DEFAULT_RPCS] : []
-  const merged = [...userUrls, ...defaults]
-
-  const seen = new Set<string>()
-  return merged.filter((u) => {
-    if (seen.has(u)) return false
-    seen.add(u)
-    return true
-  })
-}
 
 export async function getShotBalance(walletAddress: string): Promise<bigint> {
   const userUrls = parseUserRpcUrls()
@@ -58,7 +34,7 @@ export async function getShotBalance(walletAddress: string): Promise<bigint> {
   }
 
   const hint = shouldAppendSepoliaFallbacks(userUrls)
-    ? " For Sepolia, set NEXT_PUBLIC_CHAIN_ID=11155111 and/or use a healthy RPC (comma-separated fallbacks). Public fallbacks are appended after your URL unless ETHEREUM_RPC_NO_DEFAULT_FALLBACKS=1."
+    ? " For Sepolia, set NEXT_PUBLIC_CHAIN_ID=11155111 and/or use a healthy RPC (comma-separated for fallbacks). Public fallbacks are appended after your URL unless ETHEREUM_RPC_NO_DEFAULT_FALLBACKS=1."
     : " Set ETHEREUM_RPC_URL to a reliable JSON-RPC endpoint for your chain (comma-separated for fallbacks)."
 
   throw new Error(

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Home, Search, Bell, Mail, Bookmark, User, Settings, MoreHorizontal, Megaphone, PenSquare } from "lucide-react"
+import { Home, Search, Bell, Mail, Bookmark, User, Settings, MoreHorizontal, Megaphone, PenSquare, Coins } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -31,6 +31,7 @@ const navItems = [
   { icon: Bell, label: "Notifications", href: "/notifications", hasBadge: "notifications" },
   { icon: Mail, label: "Messages", href: "/messages", hasBadge: "messages" },
   { icon: Bookmark, label: "Bookmarks", href: "/bookmarks" },
+  { icon: Coins, label: "Staking", href: "/staking" },
   { icon: User, label: "Profile", href: "/profile" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ]
