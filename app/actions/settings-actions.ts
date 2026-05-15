@@ -1,9 +1,11 @@
 "use server"
 
 import { cookies } from "next/headers"
+import { normalizeAvatarUrl } from "@/lib/avatar-url"
 import { executeQuery } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
+import { getUsersTableColumns, pickExistingColumns } from "@/lib/users-table-columns"
 
 export interface ProfileSettings {
   bio?: string
@@ -36,29 +38,34 @@ export async function updateProfileSettings(settings: ProfileSettings) {
       return { success: false, message: "You must be logged in to update your profile" }
     }
 
+    const columns = await getUsersTableColumns()
     const updates = []
     const values = []
     let paramIndex = 1
 
-    if (settings.bio !== undefined) {
+    if (settings.bio !== undefined && columns.has("bio")) {
       updates.push(`bio = $${paramIndex}`)
       values.push(settings.bio)
       paramIndex++
     }
 
-    if (settings.avatar_url !== undefined) {
+    if (settings.avatar_url !== undefined && columns.has("avatar_url")) {
+      const avatar = normalizeAvatarUrl(settings.avatar_url)
+      if (!avatar.ok) {
+        return { success: false, message: avatar.message }
+      }
       updates.push(`avatar_url = $${paramIndex}`)
-      values.push(settings.avatar_url)
+      values.push(avatar.value)
       paramIndex++
     }
 
-    if (settings.location !== undefined) {
+    if (settings.location !== undefined && columns.has("location")) {
       updates.push(`location = $${paramIndex}`)
       values.push(settings.location)
       paramIndex++
     }
 
-    if (settings.website !== undefined) {
+    if (settings.website !== undefined && columns.has("website")) {
       updates.push(`website = $${paramIndex}`)
       values.push(settings.website)
       paramIndex++
@@ -68,20 +75,32 @@ export async function updateProfileSettings(settings: ProfileSettings) {
       return { success: false, message: "No changes to update" }
     }
 
-    updates.push(`updated_at = CURRENT_TIMESTAMP`)
+    if (columns.has("updated_at")) {
+      updates.push(`updated_at = CURRENT_TIMESTAMP`)
+    }
 
     values.push(currentUser.id)
 
+    const returning = pickExistingColumns(columns, [
+      "id",
+      "username",
+      "bio",
+      "avatar_url",
+      "location",
+      "website",
+      "updated_at",
+    ])
+    const returningClause = returning.length > 0 ? ` RETURNING ${returning.join(", ")}` : ""
+
     const result = await executeQuery(
-      `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex} 
-       RETURNING id, username, bio, avatar_url, location, website, updated_at`,
+      `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}${returningClause}`,
       values,
     )
 
     revalidatePath(`/profile/${currentUser.username}`)
     revalidatePath("/settings")
 
-    return { success: true, user: result[0] }
+    return { success: true, user: result[0] ?? { id: currentUser.id } }
   } catch (error) {
     console.error("Error updating profile settings:", error)
     return { success: false, message: "Failed to update profile settings" }
@@ -97,12 +116,12 @@ export async function updateAccountSettings(settings: AccountSettings) {
       return { success: false, message: "You must be logged in to update your account" }
     }
 
+    const columns = await getUsersTableColumns()
     const updates = []
     const values = []
     let paramIndex = 1
 
-    if (settings.email !== undefined) {
-      // Check if email is already in use
+    if (settings.email !== undefined && columns.has("email")) {
       const emailCheck = await executeQuery("SELECT id FROM users WHERE email = $1 AND id != $2", [
         settings.email,
         currentUser.id,
@@ -117,7 +136,7 @@ export async function updateAccountSettings(settings: AccountSettings) {
       paramIndex++
     }
 
-    if (settings.username !== undefined) {
+    if (settings.username !== undefined && columns.has("username")) {
       // Check if username is already in use
       const usernameCheck = await executeQuery("SELECT id FROM users WHERE username = $1 AND id != $2", [
         settings.username,
@@ -137,17 +156,23 @@ export async function updateAccountSettings(settings: AccountSettings) {
       return { success: false, message: "No changes to update" }
     }
 
-    updates.push(`updated_at = CURRENT_TIMESTAMP`)
+    if (columns.has("updated_at")) {
+      updates.push(`updated_at = CURRENT_TIMESTAMP`)
+    }
 
     values.push(currentUser.id)
 
+    const returning = pickExistingColumns(columns, ["id", "username", "email", "updated_at"])
+    const returningClause = returning.length > 0 ? ` RETURNING ${returning.join(", ")}` : ""
+
     const result = await executeQuery(
-      `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex} 
-       RETURNING id, username, email, updated_at`,
+      `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}${returningClause}`,
       values,
     )
 
-    revalidatePath(`/profile/${result[0].username}`)
+    const newUsername =
+      (result[0] as { username?: string } | undefined)?.username ?? settings.username ?? currentUser.username
+    revalidatePath(`/profile/${newUsername}`)
     revalidatePath("/settings")
 
     return { success: true, user: result[0] }

@@ -16,7 +16,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT now() NOT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now() NOT NULL;
 
--- Partial unique: many NULL wallet_address rows allowed, non-null must be unique
+-- Unique wallet per user (run db/require-wallet-address.sql after clearing NULL wallets)
 CREATE UNIQUE INDEX IF NOT EXISTS users_wallet_address_unique
   ON users (wallet_address)
   WHERE wallet_address IS NOT NULL;

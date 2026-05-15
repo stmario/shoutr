@@ -60,6 +60,9 @@ export async function getCurrentUser() {
     }
 
     const row = userResults[0]
+    if (!row.wallet_address) {
+      return null
+    }
     return row
   } catch (error) {
     console.error("Get current user error:", error)

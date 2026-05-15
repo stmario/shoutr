@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Upload } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { updateProfileSettings } from "@/app/actions/settings-actions"
 import { useToast } from "@/hooks/use-toast"
 
@@ -68,18 +68,6 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
     }
   }
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      // In a real app, you would upload this to a storage service
-      // For now, we'll just use a placeholder
-      setFormData((prev) => ({
-        ...prev,
-        avatar_url: "/placeholder.svg?height=200&width=200",
-      }))
-    }
-  }
-
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-6">
@@ -102,7 +90,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
             )}
 
             <div className="flex flex-col md:flex-row gap-6 items-start">
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-2 shrink-0">
                 <Avatar className="h-24 w-24">
                   <AvatarImage
                     src={formData.avatar_url || "/placeholder.svg?height=96&width=96"}
@@ -110,28 +98,25 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   />
                   <AvatarFallback className="text-2xl">{user.username.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="relative">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => document.getElementById("avatar-upload")?.click()}
-                  >
-                    <Upload className="h-3 w-3 mr-1" />
-                    Change Avatar
-                  </Button>
-                  <input
-                    type="file"
-                    id="avatar-upload"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                  />
-                </div>
               </div>
 
               <div className="flex-1 space-y-4 w-full">
+                <div className="space-y-2">
+                  <Label htmlFor="avatar_url">Avatar URL</Label>
+                  <Input
+                    id="avatar_url"
+                    name="avatar_url"
+                    value={formData.avatar_url}
+                    onChange={handleChange}
+                    placeholder="https://example.com/avatar.png"
+                    type="url"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Paste a direct link to an image (http or https). Leave empty to use the default avatar.
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea

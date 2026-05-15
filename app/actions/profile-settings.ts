@@ -1,10 +1,12 @@
 "use server"
 
+import { normalizeAvatarUrl } from "@/lib/avatar-url"
 import { db } from "@/lib/db"
 import { users } from "@/lib/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
+import { requireChecksumAddress } from "@/lib/wallet-address"
 
 export async function updateProfile(formData: FormData) {
   try {
@@ -17,7 +19,15 @@ export async function updateProfile(formData: FormData) {
     const bio = formData.get("bio") as string
     const location = formData.get("location") as string
     const website = formData.get("website") as string
-    const walletAddress = formData.get("walletAddress") as string
+    const avatarRaw = formData.get("avatar_url")
+    const avatar =
+      avatarRaw === null
+        ? { ok: true as const, value: undefined }
+        : normalizeAvatarUrl(String(avatarRaw))
+
+    if (!avatar.ok) {
+      return { success: false, message: avatar.message }
+    }
 
     await db
       .update(users)
@@ -25,7 +35,7 @@ export async function updateProfile(formData: FormData) {
         bio: bio || null,
         location: location || null,
         website: website || null,
-        wallet_address: walletAddress || null,
+        ...(avatar.value !== undefined ? { avatar_url: avatar.value } : {}),
         updated_at: new Date(),
       })
       .where(eq(users.id, currentUser.id))
@@ -42,10 +52,17 @@ export async function updateProfile(formData: FormData) {
 
 export async function updateWalletAddress(userId: number, walletAddress: string) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser || currentUser.id !== userId) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    const checksum = requireChecksumAddress(walletAddress)
+
     await db
       .update(users)
       .set({
-        wallet_address: walletAddress,
+        wallet_address: checksum,
         updated_at: new Date(),
       })
       .where(eq(users.id, userId))
