@@ -1,8 +1,8 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Message } from "@/app/actions/message-actions"
+import { formatChatTimestamp } from "@/lib/format-time"
 
 interface MessageItemProps {
   message: Message
@@ -10,7 +10,7 @@ interface MessageItemProps {
 }
 
 export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
-  const formattedDate = formatDistanceToNow(new Date(message.created_at), { addSuffix: true })
+  const formattedDate = formatChatTimestamp(message.created_at)
 
   if (isCurrentUser) {
     return (

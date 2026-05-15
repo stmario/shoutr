@@ -1,8 +1,8 @@
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
 import { NotificationItem } from "@/components/notification-item"
+import { MarkAllNotificationsRead } from "@/components/mark-all-notifications-read"
 import { getCurrentUser } from "@/lib/auth"
-import { getNotifications, getUnreadNotificationCount, markNotificationsAsRead } from "@/app/actions/notification-actions"
+import { getNotifications, getUnreadNotificationCount } from "@/app/actions/notification-actions"
 import { redirect } from "next/navigation"
 
 export default async function NotificationsPage() {
@@ -28,13 +28,7 @@ export default async function NotificationsPage() {
             )}
           </h1>
         </div>
-        {unreadCount > 0 && (
-          <form action={markNotificationsAsRead}>
-            <Button type="submit" variant="ghost" size="sm">
-              Mark all as read
-            </Button>
-          </form>
-        )}
+        {unreadCount > 0 && <MarkAllNotificationsRead />}
       </header>
       <div>
         {notifications.length === 0 ? (

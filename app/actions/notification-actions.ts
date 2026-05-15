@@ -1,9 +1,10 @@
 "use server"
 
-import { db } from "@/lib/db"
+import { db, executeQuery } from "@/lib/db"
 import { notifications, shouts, comments, users } from "@/lib/schema"
 import { eq, desc, and, sql, count } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
+import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 
 const actorUser = alias(users, "actor")
@@ -57,7 +58,10 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
       .limit(limit)
       .offset(offset)
 
-    return result as Notification[]
+    return (result as Notification[]).map((row) => ({
+      ...row,
+      is_read: row.is_read === true || row.is_read === "t" || row.is_read === "true",
+    }))
   } catch (error) {
     console.error("Error fetching notifications:", error)
     return []
@@ -72,57 +76,76 @@ export async function getUnreadNotificationCount(): Promise<NotificationCount> {
       return { count: 0 }
     }
 
-    const result = await db
-      .select({
-        count: count().as("count"),
-      })
-      .from(notifications)
-      .where(and(eq(notifications.user_id, currentUser.id), eq(notifications.is_read, false)))
+    const result = await executeQuery(
+      `
+      SELECT COUNT(*)::int AS count
+      FROM notifications
+      WHERE user_id = $1
+      AND (is_read = FALSE OR is_read IS NULL)
+      `,
+      [currentUser.id],
+    )
 
-    return result[0] || { count: 0 }
+    return { count: Number(result[0]?.count ?? 0) }
   } catch (error) {
     console.error("Error fetching unread notification count:", error)
     return { count: 0 }
   }
 }
 
-export async function markNotificationsAsRead() {
+function revalidateNotificationSurfaces() {
+  revalidatePath("/notifications")
+  revalidatePath("/")
+}
+
+export async function markNotificationsAsRead(): Promise<{ success: boolean }> {
   try {
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {
-      return false
+      return { success: false }
     }
 
-    await db
-      .update(notifications)
-      .set({ is_read: true })
-      .where(and(eq(notifications.user_id, currentUser.id), eq(notifications.is_read, false)))
+    await executeQuery(
+      `
+      UPDATE notifications
+      SET is_read = TRUE
+      WHERE user_id = $1
+      AND (is_read = FALSE OR is_read IS NULL)
+      `,
+      [currentUser.id],
+    )
 
-    return true
+    revalidateNotificationSurfaces()
+    return { success: true }
   } catch (error) {
     console.error("Error marking notifications as read:", error)
-    return false
+    return { success: false }
   }
 }
 
-export async function markNotificationAsRead(id: number) {
+export async function markNotificationAsRead(id: number): Promise<{ success: boolean }> {
   try {
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {
-      return false
+      return { success: false }
     }
 
-    await db
-      .update(notifications)
-      .set({ is_read: true })
-      .where(and(eq(notifications.id, id), eq(notifications.user_id, currentUser.id)))
+    await executeQuery(
+      `
+      UPDATE notifications
+      SET is_read = TRUE
+      WHERE id = $1 AND user_id = $2
+      `,
+      [id, currentUser.id],
+    )
 
-    return true
+    revalidateNotificationSurfaces()
+    return { success: true }
   } catch (error) {
     console.error("Error marking notification as read:", error)
-    return false
+    return { success: false }
   }
 }
 

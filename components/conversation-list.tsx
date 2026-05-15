@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { formatDistanceToNow } from "date-fns"
+import { formatChatTimestamp } from "@/lib/format-time"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { getConversations } from "@/app/actions/message-actions"
 import type { Conversation } from "@/app/actions/message-actions"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,12 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 export function ConversationList() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     async function loadConversations() {
       try {
         const data = await getConversations()
         setConversations(data)
+        router.refresh()
       } catch (error) {
         console.error("Error loading conversations:", error)
       } finally {
@@ -26,10 +29,9 @@ export function ConversationList() {
 
     loadConversations()
 
-    // Refresh conversations every 30 seconds
     const interval = setInterval(loadConversations, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [router])
 
   if (loading) {
     return (
@@ -60,16 +62,17 @@ export function ConversationList() {
     <div>
       {conversations.map((conversation) => {
         const otherParticipant = conversation.participants[0]
+        if (!otherParticipant) return null
+
         const lastMessage = conversation.last_message
-        const formattedDate = lastMessage
-          ? formatDistanceToNow(new Date(lastMessage.created_at), { addSuffix: true })
-          : ""
+        const unreadCount = Number(conversation.unread_count ?? 0)
+        const formattedDate = lastMessage ? formatChatTimestamp(lastMessage.created_at) : ""
 
         return (
           <Link key={conversation.id} href={`/messages/${conversation.id}`}>
             <div
               className={`flex items-center gap-3 p-4 border-b hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${
-                conversation.unread_count > 0 ? "bg-purple-50 dark:bg-purple-900/10" : ""
+                unreadCount > 0 ? "bg-purple-50 dark:bg-purple-900/10" : ""
               }`}
             >
               <Avatar className="h-12 w-12">
@@ -92,10 +95,8 @@ export function ConversationList() {
                   <p className="text-sm text-muted-foreground italic">No messages yet</p>
                 )}
               </div>
-              {conversation.unread_count > 0 && (
-                <div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-purple-700 text-xs font-medium text-white">
-                  {conversation.unread_count > 99 ? "99+" : conversation.unread_count}
-                </div>
+              {unreadCount > 0 && (
+                <span className="h-2 w-2 shrink-0 rounded-full bg-purple-600" aria-label="Unread messages" />
               )}
             </div>
           </Link>

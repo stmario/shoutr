@@ -1,8 +1,7 @@
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { MessageItem } from "@/components/message-item"
-import { MessageInput } from "@/components/message-input"
+import { ConversationThread } from "@/components/conversation-thread"
 import { getCurrentUser } from "@/lib/auth"
-import { getConversation, getMessages } from "@/app/actions/message-actions"
+import { getConversation } from "@/app/actions/message-actions"
 import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -16,9 +15,9 @@ interface ConversationPageProps {
 
 export default async function ConversationPage({ params }: ConversationPageProps) {
   const { id } = await params
-  const conversationId = Number.parseInt(id)
+  const conversationId = Number.parseInt(id, 10)
 
-  if (isNaN(conversationId)) {
+  if (Number.isNaN(conversationId)) {
     notFound()
   }
 
@@ -34,48 +33,37 @@ export default async function ConversationPage({ params }: ConversationPageProps
     notFound()
   }
 
-  const messages = await getMessages(conversationId)
+  const otherParticipant =
+    conversation.participants.find((p) => p.id !== user.id) ?? conversation.participants[0]
 
-  // Find the other participant
-  const otherParticipant = conversation.participants.find((p) => p.id !== user.id) || conversation.participants[0]
+  if (!otherParticipant) {
+    notFound()
+  }
 
   return (
-    <SidebarInset>
-      <header className="sticky top-0 z-10 flex h-14 items-center border-b bg-background/95 backdrop-blur">
+    <SidebarInset className="flex flex-col min-h-[calc(100vh-1px)]">
+      <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center border-b bg-background/95 backdrop-blur">
         <div className="flex items-center gap-2 px-4 w-full">
           <SidebarTrigger className="md:hidden" />
-          <Link href="/messages" className="mr-2">
+          <Link href="/messages" className="mr-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
+          <Link href={`/profile/${otherParticipant.username}`} className="flex items-center gap-2 min-w-0">
+            <Avatar className="h-8 w-8 shrink-0">
               <AvatarImage
                 src={otherParticipant.avatar_url || "/placeholder.svg?height=32&width=32"}
                 alt={otherParticipant.username}
               />
               <AvatarFallback>{otherParticipant.username.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div>
-              <h1 className="font-bold">{otherParticipant.username}</h1>
-              <p className="text-xs text-muted-foreground">@{otherParticipant.username}</p>
+            <div className="min-w-0">
+              <h1 className="font-bold truncate">{otherParticipant.username}</h1>
+              <p className="text-xs text-muted-foreground truncate">@{otherParticipant.username}</p>
             </div>
-          </div>
+          </Link>
         </div>
       </header>
-      <div className="flex flex-col h-[calc(100vh-8rem)]">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-4">
-              <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <MessageItem key={message.id} message={message} isCurrentUser={message.sender_id === user.id} />
-            ))
-          )}
-        </div>
-        <MessageInput conversationId={conversationId} />
-      </div>
+      <ConversationThread conversationId={conversationId} currentUserId={user.id} />
     </SidebarInset>
   )
 }

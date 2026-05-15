@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Smile, Send, Loader2 } from "lucide-react"
+import { Send, Loader2 } from "lucide-react"
 import { sendMessage } from "@/app/actions/message-actions"
+import { useToast } from "@/hooks/use-toast"
 
 interface MessageInputProps {
   conversationId: number
@@ -17,6 +17,7 @@ export function MessageInput({ conversationId, onMessageSent }: MessageInputProp
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { toast } = useToast()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -29,17 +30,24 @@ export function MessageInput({ conversationId, onMessageSent }: MessageInputProp
 
       if (result.success) {
         setMessage("")
-        if (onMessageSent) {
-          onMessageSent()
-        }
+        await onMessageSent?.()
+      } else {
+        toast({
+          title: "Could not send",
+          description: result.message || "Failed to send message",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error sending message:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
-      if (textareaRef.current) {
-        textareaRef.current.focus()
-      }
+      textareaRef.current?.focus()
     }
   }
 
@@ -51,31 +59,20 @@ export function MessageInput({ conversationId, onMessageSent }: MessageInputProp
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border-t p-3">
-      <div className="flex items-end gap-2">
-        <div className="flex-1 relative">
-          <Textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="min-h-[60px] resize-none pr-10"
-            disabled={isSubmitting}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="absolute bottom-2 right-2 text-muted-foreground"
-            disabled={isSubmitting}
-          >
-            <Smile className="h-5 w-5" />
-          </Button>
-        </div>
+    <form onSubmit={handleSubmit} className="border-t p-3 shrink-0 bg-background">
+      <div className="flex items-end gap-2 max-w-2xl mx-auto">
+        <Textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message…"
+          className="min-h-[52px] max-h-32 resize-none flex-1"
+          disabled={isSubmitting}
+        />
         <Button
           type="submit"
-          className="bg-purple-700 hover:bg-purple-800 h-10 w-10 rounded-full p-0 flex items-center justify-center"
+          className="bg-purple-700 hover:bg-purple-800 h-10 w-10 rounded-full p-0 shrink-0"
           disabled={!message.trim() || isSubmitting}
         >
           {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}

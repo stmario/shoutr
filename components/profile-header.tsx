@@ -3,6 +3,7 @@ import Link from "next/link"
 import { CalendarDays, MapPin, LinkIcon, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FollowButton } from "@/components/follow-button"
+import { MessageButton } from "@/components/message-button"
 import type { ProfileUser } from "@/app/actions/profile"
 import { formatDate } from "@/lib/utils"
 
@@ -43,7 +44,10 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
                 </Link>
               </Button>
             ) : (
-              <FollowButton profileUserId={profile.id} initialIsFollowing={profile.is_following} />
+              <div className="flex gap-2">
+                <MessageButton userId={profile.id} />
+                <FollowButton profileUserId={profile.id} initialIsFollowing={profile.is_following} />
+              </div>
             )}
           </div>
         </div>

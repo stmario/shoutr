@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp } from "lucide-react"
+import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail } from "lucide-react"
 import Link from "next/link"
 
 interface NotificationItemProps {
@@ -36,6 +36,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         return <MessageCircle className="h-4 w-4 text-purple-500" />
       case "reshout":
         return <Repeat2 className="h-4 w-4 text-green-500" />
+      case "message":
+        return <Mail className="h-4 w-4 text-purple-500" />
       default:
         return null
     }
@@ -81,6 +83,13 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             <span className="text-muted-foreground"> reshouted your post</span>
           </>
         )
+      case "message":
+        return (
+          <>
+            <span className="font-semibold">{notification.actor_username}</span>
+            <span className="text-muted-foreground"> sent you a message</span>
+          </>
+        )
       default:
         return null
     }
@@ -89,7 +98,11 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   const getNotificationLink = () => {
     if (notification.type === "follow") {
       return `/profile/${notification.actor_username}`
-    } else if (notification.shout_id) {
+    }
+    if (notification.type === "message") {
+      return `/messages/with/${notification.actor_username}`
+    }
+    if (notification.shout_id) {
       return `/shout/${notification.shout_id}`
     }
     return "#"

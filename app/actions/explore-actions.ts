@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { users, shouts, hashtags, shoutHashtags, follows, comments, reshouts } from "@/lib/schema"
-import { eq, like, and, desc, count, sql } from "drizzle-orm"
+import { eq, like, and, desc, count, sql, ilike, ne, or } from "drizzle-orm"
 import { getCurrentUser } from "@/lib/auth"
 
 export type SearchResult = {
@@ -28,12 +28,21 @@ export async function search(
   }
 
   try {
-    const searchTerm = `%${query.trim().toLowerCase()}%`
+    const normalizedQuery = query.trim().replace(/^@+/, "")
+    if (!normalizedQuery) return []
+
+    const searchTerm = `%${normalizedQuery}%`
+    const prefixTerm = `${normalizedQuery}%`
+    const currentUser = await getCurrentUser()
     let results: SearchResult[] = []
 
     // If type is specified, only search that type
     if (type === "user" || !type) {
-      // Search users
+      const usernameMatch = ilike(users.username, searchTerm)
+      const userWhere = currentUser
+        ? and(usernameMatch, ne(users.id, currentUser.id))
+        : usernameMatch
+
       const userResults = await db
         .select({
           type: sql<"user">`'user'`,
@@ -43,19 +52,45 @@ export async function search(
           created_at: users.created_at,
         })
         .from(users)
-        .where(like(sql`LOWER(${users.username})`, searchTerm))
+        .where(userWhere)
         .orderBy(
           sql`CASE 
-            WHEN LOWER(${users.username}) = LOWER(${query.trim().toLowerCase()}) THEN 0
-            WHEN LOWER(${users.username}) LIKE LOWER(${query.trim().toLowerCase() + "%"}) THEN 1
+            WHEN LOWER(${users.username}) = LOWER(${normalizedQuery}) THEN 0
+            WHEN ${users.username} ILIKE ${prefixTerm} THEN 1
             ELSE 2
           END`,
-          users.created_at,
+          users.username,
         )
         .limit(limit)
         .offset(offset)
 
       results = [...results, ...userResults]
+
+      // Wallet prefix/exact match (e.g. holder_* usernames or 0x… lookup)
+      if (/^0x[a-fA-F0-9]{4,}$/i.test(normalizedQuery)) {
+        const walletMatch = ilike(users.wallet_address, `${normalizedQuery}%`)
+        const walletWhere = currentUser ? and(walletMatch, ne(users.id, currentUser.id)) : walletMatch
+
+        const walletUsers = await db
+          .select({
+            type: sql<"user">`'user'`,
+            id: users.id,
+            username: users.username,
+            avatar_url: users.avatar_url,
+            created_at: users.created_at,
+          })
+          .from(users)
+          .where(walletWhere)
+          .limit(limit)
+
+        const seen = new Set(results.map((r) => r.id))
+        for (const row of walletUsers) {
+          if (!seen.has(row.id)) {
+            results.push(row)
+            seen.add(row.id)
+          }
+        }
+      }
     }
 
     if (type === "shout" || !type) {
