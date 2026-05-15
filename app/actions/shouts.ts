@@ -1,7 +1,7 @@
 "use server"
 
-import { executeQuery } from "@/lib/db"
-import { shouts, hashtags, shoutHashtags, reshouts, comments, users, db } from "@/lib/schema"
+import { db, executeQuery } from "@/lib/db"
+import { shouts, hashtags, shoutHashtags, reshouts, comments, users } from "@/lib/schema"
 import { eq, and, desc, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "./auth"
