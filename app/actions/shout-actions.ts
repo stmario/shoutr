@@ -224,14 +224,14 @@ export async function getFeedShouts(userId?: number, limit = 20, offset = 0) {
       created_at: shouts.created_at,
       image_url: shouts.image_url,
       user_id: shouts.user_id,
-      username: sql<string>`users.username`,
-      avatar_url: sql<string>`users.avatar_url`,
+      username: users.username,
+      avatar_url: users.avatar_url,
       vote_count: shouts.vote_count,
       comments_count: count(comments.shout_id).as("comments_count"),
       reshouts_count: count(reshouts.shout_id).as("reshouts_count"),
     })
     .from(shouts)
-    .innerJoin("users", eq(shouts.user_id, sql`users.id`))
+    .innerJoin(users, eq(shouts.user_id, users.id))
     .leftJoin(comments, eq(shouts.id, comments.shout_id))
     .leftJoin(reshouts, eq(shouts.id, reshouts.shout_id))
     .groupBy(
@@ -241,8 +241,8 @@ export async function getFeedShouts(userId?: number, limit = 20, offset = 0) {
       shouts.image_url,
       shouts.user_id,
       shouts.vote_count,
-      sql`users.username`,
-      sql`users.avatar_url`,
+      users.username,
+      users.avatar_url,
     )
     .orderBy(desc(shouts.created_at))
     .limit(limit)
@@ -270,14 +270,14 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
       created_at: shouts.created_at,
       image_url: shouts.image_url,
       user_id: shouts.user_id,
-      username: sql<string>`users.username`,
-      avatar_url: sql<string>`users.avatar_url`,
+      username: users.username,
+      avatar_url: users.avatar_url,
       vote_count: shouts.vote_count,
       comments_count: count(comments.shout_id).as("comments_count"),
       reshouts_count: count(reshouts.shout_id).as("reshouts_count"),
     })
     .from(shouts)
-    .innerJoin("users", eq(shouts.user_id, sql`users.id`))
+    .innerJoin(users, eq(shouts.user_id, users.id))
     .leftJoin(comments, eq(shouts.id, comments.shout_id))
     .leftJoin(reshouts, eq(shouts.id, reshouts.shout_id))
     .where(eq(shouts.user_id, userId))
@@ -288,8 +288,8 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
       shouts.image_url,
       shouts.user_id,
       shouts.vote_count,
-      sql`users.username`,
-      sql`users.avatar_url`,
+      users.username,
+      users.avatar_url,
     )
     .orderBy(desc(shouts.created_at))
     .limit(limit)
@@ -432,11 +432,11 @@ export async function getCommentsByShoutId(shoutId: number) {
       content: comments.content,
       created_at: comments.created_at,
       user_id: comments.user_id,
-      username: sql<string>`users.username`,
-      avatar_url: sql<string>`users.avatar_url`,
+      username: users.username,
+      avatar_url: users.avatar_url,
     })
     .from(comments)
-    .innerJoin("users", eq(comments.user_id, sql`users.id`))
+    .innerJoin(users, eq(comments.user_id, users.id))
     .where(eq(comments.shout_id, shoutId))
     .orderBy(comments.created_at)
 }

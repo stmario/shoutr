@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { users, shouts, hashtags, shoutHashtags, follows, comments, reshouts } from "@/lib/schema"
-import { eq, like, and, desc, count, sql, ilike, ne, or } from "drizzle-orm"
+import { eq, and, desc, count, sql, ilike, ne } from "drizzle-orm"
 import { getCurrentUser } from "@/lib/auth"
 
 export type SearchResult = {
@@ -101,12 +101,12 @@ export async function search(
           id: shouts.id,
           content: shouts.content,
           created_at: shouts.created_at,
-          username: sql<string>`users.username`,
-          avatar_url: sql<string>`users.avatar_url`,
+          username: users.username,
+          avatar_url: users.avatar_url,
         })
         .from(shouts)
-        .innerJoin("users", eq(shouts.user_id, sql`users.id`))
-        .where(like(sql`LOWER(${shouts.content})`, searchTerm))
+        .innerJoin(users, eq(shouts.user_id, users.id))
+        .where(ilike(shouts.content, searchTerm))
         .orderBy(desc(shouts.created_at))
         .limit(limit)
         .offset(offset)
@@ -126,7 +126,7 @@ export async function search(
         })
         .from(hashtags)
         .leftJoin(shoutHashtags, eq(hashtags.id, shoutHashtags.hashtag_id))
-        .where(like(sql`LOWER(${hashtags.name})`, searchTerm))
+        .where(ilike(hashtags.name, searchTerm))
         .groupBy(hashtags.id, hashtags.name, hashtags.created_at)
         .orderBy(
           sql`CASE 
@@ -188,14 +188,14 @@ export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset
         created_at: shouts.created_at,
         image_url: shouts.image_url,
         user_id: shouts.user_id,
-        username: sql<string>`users.username`,
-        avatar_url: sql<string>`users.avatar_url`,
+        username: users.username,
+        avatar_url: users.avatar_url,
         vote_count: shouts.vote_count,
         comments_count: count(comments.shout_id).as("comments_count"),
         reshouts_count: count(reshouts.shout_id).as("reshouts_count"),
       })
       .from(shouts)
-      .innerJoin("users", eq(shouts.user_id, sql`users.id`))
+      .innerJoin(users, eq(shouts.user_id, users.id))
       .innerJoin(shoutHashtags, eq(shouts.id, shoutHashtags.shout_id))
       .innerJoin(hashtags, eq(shoutHashtags.hashtag_id, hashtags.id))
       .where(eq(hashtags.name, hashtagName))
@@ -208,8 +208,8 @@ export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset
         shouts.image_url,
         shouts.user_id,
         shouts.vote_count,
-        sql`users.username`,
-        sql`users.avatar_url`,
+        users.username,
+        users.avatar_url,
       )
       .orderBy(desc(shouts.created_at))
       .limit(limit)
@@ -268,14 +268,14 @@ export async function getRecentPopularShouts(limit = 10) {
         created_at: shouts.created_at,
         image_url: shouts.image_url,
         user_id: shouts.user_id,
-        username: sql<string>`users.username`,
-        avatar_url: sql<string>`users.avatar_url`,
+        username: users.username,
+        avatar_url: users.avatar_url,
         vote_count: shouts.vote_count,
         comments_count: count(comments.shout_id).as("comments_count"),
         reshouts_count: count(reshouts.shout_id).as("reshouts_count"),
       })
       .from(shouts)
-      .innerJoin("users", eq(shouts.user_id, sql`users.id`))
+      .innerJoin(users, eq(shouts.user_id, users.id))
       .innerJoin(shoutHashtags, eq(shouts.id, shoutHashtags.shout_id))
       .innerJoin(
         sql`(
@@ -296,8 +296,8 @@ export async function getRecentPopularShouts(limit = 10) {
         shouts.image_url,
         shouts.user_id,
         shouts.vote_count,
-        sql`users.username`,
-        sql`users.avatar_url`,
+        users.username,
+        users.avatar_url,
       )
       .orderBy(desc(shouts.created_at))
       .limit(limit)
