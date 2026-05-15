@@ -40,7 +40,7 @@ export default async function HashtagPage({ params }: HashtagPageProps) {
         <InfiniteScrollShoutList
           initialShouts={initialShouts}
           userId={user.id}
-          fetchMoreFn={async (offset) => getShoutsByHashtag(decodedName, 10, offset)}
+          hashtagName={decodedName}
         />
       </div>
     </SidebarInset>

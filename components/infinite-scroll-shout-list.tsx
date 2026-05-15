@@ -1,21 +1,34 @@
 "use client"
 
+import { useCallback } from "react"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import { ShoutCard } from "@/components/shout-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
+import { getShoutsByHashtag } from "@/app/actions/explore-actions"
+
+const PAGE_SIZE = 10
 
 interface InfiniteScrollShoutListProps {
   initialShouts: any[]
   userId?: number
-  fetchMoreFn: (offset: number) => Promise<any[]>
+  hashtagName: string
 }
 
-export function InfiniteScrollShoutList({ initialShouts, userId, fetchMoreFn }: InfiniteScrollShoutListProps) {
+export function InfiniteScrollShoutList({
+  initialShouts,
+  userId,
+  hashtagName,
+}: InfiniteScrollShoutListProps) {
+  const fetchMore = useCallback(
+    (offset: number) => getShoutsByHashtag(hashtagName, PAGE_SIZE, offset),
+    [hashtagName],
+  )
+
   const { data, isLoading, hasMore, error, loadMoreRef } = useInfiniteScroll<any>({
     initialData: initialShouts,
-    fetchMore: fetchMoreFn,
-    hasMoreInitial: initialShouts.length >= 10, // Assume there might be more if we got a full page
+    fetchMore,
+    hasMoreInitial: initialShouts.length >= PAGE_SIZE,
   })
 
   if (data.length === 0 && !isLoading) {
@@ -32,7 +45,6 @@ export function InfiniteScrollShoutList({ initialShouts, userId, fetchMoreFn }: 
         <ShoutCard key={shout.id} shout={shout} currentUserId={userId} />
       ))}
 
-      {/* Loading indicator and error message */}
       <div ref={loadMoreRef} className="py-4 flex justify-center">
         {isLoading && (
           <div className="flex items-center justify-center">
@@ -43,13 +55,7 @@ export function InfiniteScrollShoutList({ initialShouts, userId, fetchMoreFn }: 
         {error && (
           <div className="text-center">
             <p className="text-red-500 mb-2">{error}</p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const offset = data.length
-                fetchMoreFn(offset)
-              }}
-            >
+            <Button variant="outline" onClick={() => fetchMore(data.length)}>
               Try Again
             </Button>
           </div>

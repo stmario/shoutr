@@ -1,12 +1,46 @@
 "use server"
 
-import { db, executeQuery } from "@/lib/db"
-import { bookmarks, shouts } from "@/lib/schema"
-import { eq, and } from "drizzle-orm"
+import { executeQuery } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 
-// Add a shout to bookmarks
+export type BookmarkedShout = {
+  id: number
+  content: string
+  created_at: string
+  image_url: string | null
+  user_id: number
+  username: string
+  avatar_url: string | null
+  wallet_address: string | null
+  vote_count: string
+  comments_count: number
+  reshouts_count: number
+  bookmarked_at: string
+}
+
+function normalizeBookmarkedRow(row: Record<string, unknown>): BookmarkedShout {
+  return {
+    id: Number(row.id),
+    content: String(row.content ?? ""),
+    created_at: String(row.created_at),
+    image_url: row.image_url != null ? String(row.image_url) : null,
+    user_id: Number(row.user_id),
+    username: String(row.username),
+    avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
+    wallet_address: row.wallet_address != null ? String(row.wallet_address) : null,
+    vote_count: String(row.vote_count ?? "0"),
+    comments_count: Number(row.comments_count ?? 0),
+    reshouts_count: Number(row.reshouts_count ?? 0),
+    bookmarked_at: String(row.bookmarked_at),
+  }
+}
+
+function revalidateBookmarkPaths() {
+  revalidatePath("/bookmarks")
+  revalidatePath("/")
+}
+
 export async function addBookmark(shoutId: number) {
   try {
     const currentUser = await getCurrentUser()
@@ -15,9 +49,21 @@ export async function addBookmark(shoutId: number) {
       return { success: false, message: "You must be logged in to bookmark shouts" }
     }
 
-    await db.insert(bookmarks).values({ user_id: currentUser.id, shout_id: shoutId }).onConflictDoNothing()
+    const shout = await executeQuery(`SELECT id FROM shouts WHERE id = $1`, [shoutId])
+    if (shout.length === 0) {
+      return { success: false, message: "Shout not found" }
+    }
 
-    revalidatePath("/bookmarks")
+    await executeQuery(
+      `
+      INSERT INTO bookmarks (user_id, shout_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, shout_id) DO NOTHING
+      `,
+      [currentUser.id, shoutId],
+    )
+
+    revalidateBookmarkPaths()
     return { success: true }
   } catch (error) {
     console.error("Error adding bookmark:", error)
@@ -25,7 +71,6 @@ export async function addBookmark(shoutId: number) {
   }
 }
 
-// Remove a shout from bookmarks
 export async function removeBookmark(shoutId: number) {
   try {
     const currentUser = await getCurrentUser()
@@ -34,9 +79,12 @@ export async function removeBookmark(shoutId: number) {
       return { success: false, message: "You must be logged in to remove bookmarks" }
     }
 
-    await db.delete(bookmarks).where(and(eq(bookmarks.user_id, currentUser.id), eq(bookmarks.shout_id, shoutId)))
+    await executeQuery(
+      `DELETE FROM bookmarks WHERE user_id = $1 AND shout_id = $2`,
+      [currentUser.id, shoutId],
+    )
 
-    revalidatePath("/bookmarks")
+    revalidateBookmarkPaths()
     return { success: true }
   } catch (error) {
     console.error("Error removing bookmark:", error)
@@ -44,8 +92,7 @@ export async function removeBookmark(shoutId: number) {
   }
 }
 
-// Check if a shout is bookmarked by the current user
-export async function isBookmarked(shoutId: number) {
+export async function isBookmarked(shoutId: number): Promise<boolean> {
   try {
     const currentUser = await getCurrentUser()
 
@@ -53,10 +100,10 @@ export async function isBookmarked(shoutId: number) {
       return false
     }
 
-    const result = await db
-      .select({ id: bookmarks.user_id })
-      .from(bookmarks)
-      .where(and(eq(bookmarks.user_id, currentUser.id), eq(bookmarks.shout_id, shoutId)))
+    const result = await executeQuery(
+      `SELECT 1 FROM bookmarks WHERE user_id = $1 AND shout_id = $2 LIMIT 1`,
+      [currentUser.id, shoutId],
+    )
 
     return result.length > 0
   } catch (error) {
@@ -65,8 +112,7 @@ export async function isBookmarked(shoutId: number) {
   }
 }
 
-// Get all bookmarked shouts for the current user
-export async function getBookmarkedShouts(limit = 20, offset = 0) {
+export async function getBookmarkedShouts(limit = 20, offset = 0): Promise<BookmarkedShout[]> {
   try {
     const currentUser = await getCurrentUser()
 
@@ -82,7 +128,7 @@ export async function getBookmarkedShouts(limit = 20, offset = 0) {
         s.created_at,
         s.image_url,
         s.user_id,
-        s.like_count AS vote_count,
+        s.like_count::text AS vote_count,
         u.username,
         u.avatar_url,
         u.wallet_address,
@@ -99,9 +145,24 @@ export async function getBookmarkedShouts(limit = 20, offset = 0) {
       [currentUser.id, limit, offset],
     )
 
-    return result
+    return result.map((row) => normalizeBookmarkedRow(row as Record<string, unknown>))
   } catch (error) {
     console.error("Error fetching bookmarked shouts:", error)
     return []
+  }
+}
+
+export async function getBookmarkCount(): Promise<number> {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return 0
+
+    const result = await executeQuery(
+      `SELECT COUNT(*)::int AS count FROM bookmarks WHERE user_id = $1`,
+      [currentUser.id],
+    )
+    return Number(result[0]?.count ?? 0)
+  } catch {
+    return 0
   }
 }

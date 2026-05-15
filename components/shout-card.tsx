@@ -34,6 +34,7 @@ interface ShoutCardProps {
   currentUserWallet?: string
   isReshouted?: boolean
   isBookmarked?: boolean
+  onBookmarkChange?: (bookmarked: boolean) => void
 }
 
 export function ShoutCard({
@@ -42,6 +43,7 @@ export function ShoutCard({
   currentUserWallet: _currentUserWallet,
   isReshouted = false,
   isBookmarked: initialIsBookmarked = false,
+  onBookmarkChange,
 }: ShoutCardProps) {
   const initialTotal = shout.vote_count?.toString() ?? "0"
   const [likeTotalWei, setLikeTotalWei] = useState(initialTotal)
@@ -147,6 +149,7 @@ export function ShoutCard({
         const result = await removeBookmark(shout.id)
         if (result.success) {
           setBookmarked(false)
+          onBookmarkChange?.(false)
           toast({
             title: "Bookmark removed",
             description: "Shout removed from your bookmarks",
@@ -162,6 +165,7 @@ export function ShoutCard({
         const result = await addBookmark(shout.id)
         if (result.success) {
           setBookmarked(true)
+          onBookmarkChange?.(true)
           toast({
             title: "Bookmarked",
             description: "Shout added to your bookmarks",

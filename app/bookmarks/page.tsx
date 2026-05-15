@@ -1,9 +1,11 @@
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { InfiniteScrollShoutList } from "@/components/infinite-scroll-shout-list"
+import { BookmarkedShoutList } from "@/components/bookmarked-shout-list"
 import { getCurrentUser } from "@/lib/auth"
-import { getBookmarkedShouts } from "@/app/actions/bookmark-actions"
+import { getBookmarkCount, getBookmarkedShouts } from "@/app/actions/bookmark-actions"
 import { redirect } from "next/navigation"
 import { Bookmark } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default async function BookmarksPage() {
   const user = await getCurrentUser()
@@ -12,7 +14,10 @@ export default async function BookmarksPage() {
     redirect("/login")
   }
 
-  const bookmarkedShouts = await getBookmarkedShouts(10, 0)
+  const [bookmarkedShouts, bookmarkCount] = await Promise.all([
+    getBookmarkedShouts(10, 0),
+    getBookmarkCount(),
+  ])
 
   return (
     <SidebarInset>
@@ -20,6 +25,9 @@ export default async function BookmarksPage() {
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="md:hidden" />
           <h1 className="text-xl font-bold">Bookmarks</h1>
+          {bookmarkCount > 0 && (
+            <span className="text-sm text-muted-foreground">({bookmarkCount})</span>
+          )}
         </div>
       </header>
       <div className="container max-w-2xl mx-auto px-4 py-4">
@@ -29,16 +37,15 @@ export default async function BookmarksPage() {
               <Bookmark className="h-8 w-8 text-purple-700" />
             </div>
             <h2 className="text-xl font-semibold mb-2">No bookmarks yet</h2>
-            <p className="text-muted-foreground max-w-md">
-              When you bookmark shouts, they'll appear here so you can easily find them again.
+            <p className="text-muted-foreground max-w-md mb-6">
+              Tap the bookmark icon on any shout to save it here for later.
             </p>
+            <Button asChild variant="outline">
+              <Link href="/">Browse shouts</Link>
+            </Button>
           </div>
         ) : (
-          <InfiniteScrollShoutList
-            initialShouts={bookmarkedShouts}
-            userId={user.id}
-            fetchMoreFn={async (offset) => getBookmarkedShouts(10, offset)}
-          />
+          <BookmarkedShoutList initialShouts={bookmarkedShouts} userId={user.id} />
         )}
       </div>
     </SidebarInset>
