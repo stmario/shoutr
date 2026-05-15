@@ -11,8 +11,11 @@ import "./globals.css"
 export const metadata = {
   title: "Shoutr - Connect with friends",
   description: "A social media platform for sharing your thoughts",
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
+
+/** App uses auth cookies in the root sidebar — opt out of static prerender. */
+export const dynamic = "force-dynamic"
 
 export default function RootLayout({
   children,

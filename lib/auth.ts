@@ -65,6 +65,14 @@ export async function getCurrentUser() {
     }
     return row
   } catch (error) {
+    const digest = typeof error === "object" && error !== null && "digest" in error ? String((error as { digest: string }).digest) : ""
+    if (
+      digest === "DYNAMIC_SERVER_USAGE" ||
+      (error instanceof Error && error.message.includes("Dynamic server usage"))
+    ) {
+      return null
+    }
+
     console.error("Get current user error:", error)
 
     // For rate limiting errors, return a mock user to prevent cascading failures
