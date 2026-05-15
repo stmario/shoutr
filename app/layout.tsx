@@ -12,6 +12,14 @@ export const metadata = {
   title: "Shoutr - Connect with friends",
   description: "A social media platform for sharing your thoughts",
   generator: "v0.dev",
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/logo/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/logo/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 }
 
 /** App uses auth cookies in the root sidebar — opt out of static prerender. */

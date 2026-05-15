@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Home, Search, Bell, Mail, Bookmark, User, Settings, MoreHorizontal, Megaphone, PenSquare, Coins } from "lucide-react"
+import { Home, Search, Bell, Mail, Bookmark, User, Settings, MoreHorizontal, PenSquare, Coins } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
@@ -26,6 +26,7 @@ import { getUnreadMessageCount } from "@/app/actions/message-actions"
 import { MobileMenu } from "./mobile-menu"
 import { LogoutButton } from "./logout-button"
 import { UnreadDot } from "./unread-dot"
+import { ShoutrLogo } from "./shoutr-logo"
 
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
@@ -49,11 +50,8 @@ export async function AppSidebar() {
   return (
     <>
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 bg-background/80 backdrop-blur-sm border-b">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-700 text-white">
-            <Megaphone className="h-5 w-5" />
-          </div>
-          <span className="text-xl font-bold">Shoutr</span>
+        <Link href="/">
+          <ShoutrLogo priority />
         </Link>
         <MobileMenu
           user={user}
@@ -65,11 +63,8 @@ export async function AppSidebar() {
       <Sidebar className="hidden md:flex">
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-700 text-white">
-                <Megaphone className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-bold hidden md:inline-block">Shoutr</span>
+            <Link href="/">
+              <ShoutrLogo wordmarkClassName="text-xl font-bold hidden md:inline-block" />
             </Link>
           </div>
         </SidebarHeader>

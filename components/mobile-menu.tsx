@@ -4,10 +4,11 @@ import { useState } from "react"
 import Link from "next/link"
 import { Menu, X, Home, Search, Bell, Mail, Bookmark, User, Settings, PenSquare, Coins } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoutButton } from "@/components/logout-button"
 import { UnreadDot } from "@/components/unread-dot"
+import { ShoutrLogo } from "@/components/shoutr-logo"
 
 type MobileMenuProps = {
   user: any
@@ -50,15 +51,13 @@ export function MobileMenu({ user, hasUnreadNotifications, unreadMessageCount }:
           </span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[80%] max-w-[300px] p-0">
+      <SheetContent side="left" className="w-[80%] max-w-[300px] p-0 [&>button]:hidden">
+        <SheetTitle className="sr-only">Navigation menu</SheetTitle>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
-              <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-700 text-white">
-                  <span className="font-bold">S</span>
-                </div>
-                <span className="text-xl font-bold">Shoutr</span>
+              <Link href="/" onClick={() => setOpen(false)}>
+                <ShoutrLogo />
               </Link>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
