@@ -14,7 +14,7 @@ export default function LoginPage() {
             <Megaphone className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl font-bold">Sign in to Shoutr</CardTitle>
-          <CardDescription>Connect your wallet and sign with Ethereum. SHOT token holders only.</CardDescription>
+          <CardDescription>Connect your wallet and sign with Ethereum.</CardDescription>
         </CardHeader>
         <CardContent>
           <SiweSignIn />

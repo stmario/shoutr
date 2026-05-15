@@ -24,6 +24,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { getUnreadNotificationCount } from "@/app/actions/notification-actions"
 import { getUnreadMessageCount } from "@/app/actions/message-actions"
 import { MobileMenu } from "./mobile-menu"
+import { LogoutButton } from "./logout-button"
 
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
@@ -150,7 +151,7 @@ export async function AppSidebar() {
                     <Link href="/settings">Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Log out</DropdownMenuItem>
+                  <LogoutButton />
                 </>
               ) : (
                 <>

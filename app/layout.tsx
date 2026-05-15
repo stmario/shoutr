@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AppSidebar } from "@/components/app-sidebar"
 import { NewsSidebar } from "@/components/news-sidebar"
 import { Toaster } from "@/components/ui/toaster"
+import { WalletSessionGuard } from "@/components/wallet-session-guard"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
@@ -32,6 +33,7 @@ export default function RootLayout({
               </div>
             </div>
             <Toaster />
+            <WalletSessionGuard />
           </SidebarProvider>
           </TooltipProvider>
         </ThemeProvider>

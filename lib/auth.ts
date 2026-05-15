@@ -8,7 +8,7 @@ import { verifyAuthToken } from "./session-token"
 
 export async function logout() {
   const cookieStore = await cookies()
-  cookieStore.delete("auth_token")
+  cookieStore.delete({ name: "auth_token", path: "/" })
   return { success: true }
 }
 

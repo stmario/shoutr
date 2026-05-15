@@ -18,8 +18,10 @@ export function ICOProgress({ currentRaised, hardCap }: ICOProgressProps) {
       </div>
       <Progress value={progressPercentage} className="h-2" />
       <div className="flex justify-between text-sm text-muted-foreground">
-        <span>{currentRaised.toFixed(2)} ETH raised</span>
-        <span>Hard cap: {hardCap} ETH</span>
+        <span>
+          {currentRaised.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH raised
+        </span>
+        <span>Hard cap: {hardCap.toLocaleString("de-CH")} ETH</span>
       </div>
     </div>
   )

@@ -24,7 +24,7 @@ export async function getShotBalance(walletAddress: string): Promise<bigint> {
     try {
       const provider = createStaticJsonRpcProvider(rpc)
       const ico = new ethers.Contract(icoAddress, icoAbi, provider)
-      const tokenAddress: string = await ico.tokenAddress()
+      const tokenAddress: string = await ico.token()
       const token = new ethers.Contract(tokenAddress, erc20BalanceAbi, provider)
       const balance: bigint = await token.balanceOf(walletAddress)
       return balance

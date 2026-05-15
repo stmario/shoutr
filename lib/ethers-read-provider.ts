@@ -1,9 +1,10 @@
 import { ethers, Network } from "ethers"
 
-/** Public Sepolia RPCs used when chain is Sepolia (unless ETHEREUM_RPC_NO_DEFAULT_FALLBACKS=1). */
+/** Public Sepolia RPCs (drpc free tier limits JSON batch size — listed last). */
 export const SEPOLIA_DEFAULT_RPCS = [
   "https://ethereum-sepolia-rpc.publicnode.com",
   "https://1rpc.io/sepolia",
+  "https://rpc.sepolia.org",
   "https://sepolia.drpc.org",
 ] as const
 
@@ -24,7 +25,11 @@ export function chainIdForRpcUrl(rpcUrl: string): number {
 export function createStaticJsonRpcProvider(rpcUrl: string) {
   const chainId = chainIdForRpcUrl(rpcUrl)
   const network = Network.from(chainId)
-  return new ethers.JsonRpcProvider(rpcUrl, network, { staticNetwork: true })
+  return new ethers.JsonRpcProvider(rpcUrl, network, {
+    staticNetwork: true,
+    /** drpc.org free tier rejects batches >3; disable batching for all RPCs. */
+    batchMaxCount: 1,
+  })
 }
 
 export function shouldAppendSepoliaFallbacks(userUrls: string[]): boolean {

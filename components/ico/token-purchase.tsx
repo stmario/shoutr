@@ -1,31 +1,44 @@
 "use client"
 
 import { useState } from "react"
-import { ethers } from "ethers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
-import { buyTokens } from "@/lib/ico-contract"
+import {
+  buyTokensWithEth,
+  formatEstimateShotFromEth,
+  formatIcoError,
+  getExplorerTxUrl,
+  getShotPerEthRate,
+  type IcoStats,
+} from "@/lib/ico-contract"
 
-interface TokenPurchaseProps {
-  priceFraction: number
+type TokenPurchaseProps = {
+  stats: IcoStats
+  onPurchased?: () => void
 }
 
-export function TokenPurchase({ priceFraction }: TokenPurchaseProps) {
-  const [amount, setAmount] = useState<string>("")
+export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
+  const [amount, setAmount] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
 
-  const tokenPrice = priceFraction > 0 ? 1 / priceFraction : 0
-  const tokensToReceive = amount ? Number.parseFloat(amount) / tokenPrice : 0
+  const tokensToReceiveDisplay = formatEstimateShotFromEth(amount, stats.tokensPerEth)
+  const exampleShotDisplay = formatEstimateShotFromEth("0.1", stats.tokensPerEth)
+  const rateShotPerEth = getShotPerEthRate(stats.tokensPerEth)
 
   const handlePurchase = async () => {
     if (!amount || Number.parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount")
+      setError("Please enter a valid ETH amount")
+      return
+    }
+
+    if (!stats.canBuyOnChain) {
+      setError("ICO purchases are not available (ended, paused, hard cap reached, or insufficient SHOT in the contract).")
       return
     }
 
@@ -36,24 +49,22 @@ export function TokenPurchase({ priceFraction }: TokenPurchaseProps) {
 
     try {
       if (!window.ethereum) {
-        throw new Error("No Ethereum wallet found. Please install MetaMask or another wallet.")
+        throw new Error("Connect an Ethereum wallet (e.g. MetaMask) to buy SHOT.")
       }
 
-      // Convert amount to wei
-      const amountInWei = ethers.utils.parseEther(amount)
-
-      const result = await buyTokens(amountInWei.toString())
+      const result = await buyTokensWithEth(amount)
 
       if (result.success) {
-        setSuccess(`Successfully purchased ${tokensToReceive.toFixed(2)} SHOT tokens!`)
+        setSuccess(`Purchased ~${formatEstimateShotFromEth(amount, stats.tokensPerEth)} SHOT`)
         setTxHash(result.txHash)
         setAmount("")
+        onPurchased?.()
       } else {
-        throw new Error(result.error?.message || "Transaction failed")
+        throw result.error
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error purchasing tokens:", err)
-      setError(err.message || "Failed to purchase tokens")
+      setError(formatIcoError(err))
     } finally {
       setIsProcessing(false)
     }
@@ -61,30 +72,41 @@ export function TokenPurchase({ priceFraction }: TokenPurchaseProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <p className="text-sm text-muted-foreground">
+        Rate: {rateShotPerEth.toLocaleString()} SHOT per 1 ETH (0.1 ETH ≈ {exampleShotDisplay} SHOT)
+      </p>
+
       <div className="grid gap-2">
-        <Label htmlFor="amount">Amount (ETH)</Label>
+        <Label htmlFor="eth-amount">Amount (ETH)</Label>
         <Input
-          id="amount"
+          id="eth-amount"
           type="number"
           placeholder="0.1"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          min="0.001"
-          step="0.001"
+          min="0.0001"
+          step="any"
+          disabled={!stats.canBuyOnChain || isProcessing}
         />
-        {amount && (
-          <div className="text-sm text-muted-foreground">
-            You will receive approximately {tokensToReceive.toFixed(2)} SHTR tokens
-          </div>
+        {amount && Number.parseFloat(amount) > 0 && (
+          <p className="text-sm text-muted-foreground">
+            You receive approximately {tokensToReceiveDisplay} SHOT
+          </p>
         )}
       </div>
 
       <Button
         onClick={handlePurchase}
-        disabled={isProcessing || !amount || Number.parseFloat(amount) <= 0}
+        disabled={isProcessing || !stats.canBuyOnChain || !amount || Number.parseFloat(amount) <= 0}
         className="w-full"
       >
-        {isProcessing ? "Processing..." : "Buy Tokens"}
+        {isProcessing
+          ? "Confirm in wallet…"
+          : stats.canBuyOnChain
+            ? "Buy SHOT with ETH"
+            : stats.paused
+              ? "Sale paused"
+              : "Purchases unavailable"}
       </Button>
 
       {error && (
@@ -95,23 +117,23 @@ export function TokenPurchase({ priceFraction }: TokenPurchaseProps) {
       )}
 
       {success && (
-        <Alert variant="default" className="bg-green-50 border-green-200 text-green-800">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950 dark:text-green-100">
+          <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 
       {txHash && (
-        <div className="text-sm">
+        <p className="text-sm">
           <a
-            href={`https://sepolia.etherscan.io/tx/${txHash}`}
+            href={getExplorerTxUrl(txHash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
+            className="text-primary underline"
           >
-            View transaction on Etherscan
+            View transaction
           </a>
-        </div>
+        </p>
       )}
     </div>
   )

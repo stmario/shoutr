@@ -285,7 +285,7 @@ export async function deleteAccount(confirmationUsername: string) {
     await executeQuery(`DELETE FROM users WHERE id = $1`, [currentUser.id])
 
     const cookieStore = await cookies()
-    cookieStore.delete("auth_token")
+    cookieStore.delete({ name: "auth_token", path: "/" })
 
     return { success: true, message: "Account deleted successfully" }
   } catch (error) {

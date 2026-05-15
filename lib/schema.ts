@@ -5,14 +5,14 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email").unique(),
-  password_hash: text("password_hash").notNull(),
+  password_hash: text("password_hash"), // optional — SIWE-only users have no password
   bio: text("bio"),
   location: text("location"),
   website: text("website"),
   avatar_url: text("avatar_url"),
   wallet_address: text("wallet_address").unique(),
   weight: numeric("weight", { precision: 78, scale: 0 }).default("0").notNull(), // staked SHOT in wei (like power)
-  is_verified: boolean("is_verified").default(false).notNull(),
+  is_verified: boolean("is_verified").default(false),
   verification_token: text("verification_token"),
   reset_token: text("reset_token"),
   created_at: timestamp("created_at").defaultNow().notNull(),

@@ -58,7 +58,9 @@ export function NewsSidebar() {
           <CardContent className="space-y-3">
             <div className="space-y-1">
               <h3 className="font-medium text-purple-800">Join our ICO now!</h3>
-              <p className="text-sm text-muted-foreground">Be part of the future of decentralized social media</p>
+              <p className="text-sm text-muted-foreground">
+                1&apos;000&apos;000&apos;000 SHOT · 10&apos;000 SHOT/ETH · 10% team allocation
+              </p>
             </div>
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="bg-purple-100 text-purple-800 hover:bg-purple-200">

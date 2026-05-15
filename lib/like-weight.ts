@@ -42,3 +42,13 @@ export function formatLikeWeightShot(
   const amount = formatLikeWeight(weightWei, decimals, maxFraction)
   return `${amount} ${currency}`
 }
+
+/** Format wei as ETH for display (e.g. treasury / gas context). */
+export function formatEthFromWei(weightWei: string | number | bigint, maxFraction = 4): string {
+  const value = weightWeiToBigInt(weightWei)
+  if (value === 0n) return "0 ETH"
+  const eth = ethers.formatEther(value)
+  const n = Number.parseFloat(eth)
+  if (!Number.isFinite(n)) return `${eth} ETH`
+  return `${n.toLocaleString(undefined, { maximumFractionDigits: maxFraction })} ETH`
+}

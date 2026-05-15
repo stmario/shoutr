@@ -3,7 +3,6 @@ import { cookies } from "next/headers"
 import { SiweMessage } from "siwe"
 import { findOrCreateSiweUser } from "@/lib/siwe-user"
 import { signAuthToken } from "@/lib/session-token"
-import { walletHoldsShot } from "@/lib/shot-balance"
 
 const NONCE_COOKIE = "siwe_nonce"
 
@@ -66,22 +65,6 @@ export async function POST(request: Request) {
   }
 
   const address = result.data.address
-
-  let holdsShot: boolean
-  try {
-    holdsShot = await walletHoldsShot(address)
-  } catch (err) {
-    console.error("SHOT balance check failed:", err)
-    return NextResponse.json(
-      { error: "Unable to verify token balance. Check server RPC and ICO contract configuration." },
-      { status: 503 },
-    )
-  }
-
-  if (!holdsShot) {
-    return NextResponse.json({ error: "You must hold SHOT tokens to sign in." }, { status: 403 })
-  }
-
   const user = await findOrCreateSiweUser(address)
   const token = await signAuthToken({
     id: user.id,

@@ -6,6 +6,7 @@ import { Menu, X, Home, Search, Bell, Mail, Bookmark, User, Settings, PenSquare,
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { LogoutButton } from "@/components/logout-button"
 
 type MobileMenuProps = {
   user: any
@@ -96,6 +97,7 @@ export function MobileMenu({ user, unreadNotificationCount, unreadMessageCount }
                   Shout
                 </Link>
               </Button>
+              <LogoutButton variant="button" className="mt-2" onComplete={() => setOpen(false)} />
             </div>
           )}
 

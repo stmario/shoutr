@@ -1,6 +1,5 @@
 import { randomUUID } from "crypto"
 import { ethers } from "ethers"
-import bcrypt from "bcryptjs"
 import { eq } from "drizzle-orm"
 import { db, executeQuery } from "./db"
 import { users } from "./schema"
@@ -16,6 +15,21 @@ export type SiweUserRow = {
   email: string
 }
 
+let usersColumnCache: Set<string> | null = null
+
+async function getUsersTableColumns(): Promise<Set<string>> {
+  if (usersColumnCache) return usersColumnCache
+
+  const rows = (await executeQuery(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'users'`,
+  )) as { column_name: string }[]
+
+  usersColumnCache = new Set(rows.map((r) => r.column_name))
+  return usersColumnCache
+}
+
 async function pickUsername(checksumAddress: string) {
   const base = `holder_${checksumAddress.slice(2, 10).toLowerCase()}`
   let candidate = base
@@ -27,6 +41,45 @@ async function pickUsername(checksumAddress: string) {
     candidate = `${base}_${n + 1}`
   }
   return `${base}_${randomUUID().slice(0, 8)}`
+}
+
+async function insertWalletUser(username: string, walletAddress: string) {
+  const columns = await getUsersTableColumns()
+  const fields: string[] = []
+  const values: unknown[] = []
+  const placeholders: string[] = []
+
+  const add = (name: string, value: unknown) => {
+    if (!columns.has(name)) return
+    fields.push(name)
+    values.push(value)
+    placeholders.push(`$${values.length}`)
+  }
+
+  add("username", username)
+  add("wallet_address", walletAddress)
+  add("is_verified", true)
+  add("weight", "0")
+
+  if (fields.length === 0) {
+    throw new Error("users table has no compatible columns for wallet sign-up (need at least username or wallet_address)")
+  }
+
+  const returning = fields.includes("username") ? "id, username" : "id"
+
+  const inserted = await executeQuery(
+    `INSERT INTO users (${fields.join(", ")})
+     VALUES (${placeholders.join(", ")})
+     RETURNING ${returning}`,
+    values,
+  )
+
+  if (!inserted.length) {
+    throw new Error("Failed to create wallet user")
+  }
+
+  const row = inserted[0] as { id: number; username?: string }
+  return { id: row.id, username: row.username ?? username }
 }
 
 export async function findOrCreateSiweUser(walletAddress: string): Promise<SiweUserRow> {
@@ -42,22 +95,10 @@ export async function findOrCreateSiweUser(walletAddress: string): Promise<SiweU
     return { id: row.id, username: row.username, email }
   }
 
-  const passwordHash = await bcrypt.hash(randomUUID(), 10)
   const username = await pickUsername(address)
 
   try {
-    const inserted = await executeQuery(
-      `INSERT INTO users (username, wallet_address, password_hash, is_verified)
-       VALUES ($1, $2, $3, true)
-       RETURNING id, username`,
-      [username, address, passwordHash],
-    )
-
-    if (!inserted.length) {
-      throw new Error("Failed to create wallet user")
-    }
-
-    const row = inserted[0] as { id: number; username: string }
+    const row = await insertWalletUser(username, address)
     return { id: row.id, username: row.username, email }
   } catch (err: unknown) {
     const code = typeof err === "object" && err !== null && "code" in err ? String((err as { code: string }).code) : ""

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
 import { updateAccountSettings } from "@/app/actions/settings-actions"
 import { useToast } from "@/hooks/use-toast"
 
@@ -16,6 +17,7 @@ interface AccountSettingsProps {
   user: {
     id: number
     username: string
+    wallet_address?: string | null
   }
 }
 
@@ -79,6 +81,18 @@ export function AccountSettings({ user }: AccountSettingsProps) {
                 <AlertDescription>Your account has been updated successfully.</AlertDescription>
               </Alert>
             )}
+
+            <div className="space-y-2">
+              <Label>Linked wallet</Label>
+              <p className="text-sm font-mono break-all">{user.wallet_address ?? "No wallet linked"}</p>
+              <p className="text-sm text-muted-foreground">
+                To use a different address,{" "}
+                <Link href="/login" className="text-primary underline">
+                  log out and sign in
+                </Link>{" "}
+                with Switch wallet on the login page.
+              </p>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>

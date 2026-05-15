@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ethers } from "ethers"
+import { BrowserProvider, ethers } from "ethers"
 import { Button } from "@/components/ui/button"
 import { Wallet, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { connectWallet, formatEthAmount, getWalletBalance } from "@/lib/ico-contract"
 
 export function WalletConnect() {
   const [account, setAccount] = useState<string | null>(null)
@@ -13,60 +14,41 @@ export function WalletConnect() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if wallet is already connected
     const checkConnection = async () => {
-      if (window.ethereum && window.ethereum.selectedAddress) {
-        const address = window.ethereum.selectedAddress
+      if (!window.ethereum) return
+      const provider = new BrowserProvider(window.ethereum)
+      const accounts = await provider.listAccounts()
+      if (accounts.length > 0) {
+        const address = accounts[0].address
         setAccount(address)
-        await getBalance(address)
+        const bal = await getWalletBalance(address)
+        setBalance(formatEthAmount(ethers.parseEther(bal), 4))
       }
     }
-
-    checkConnection()
+    void checkConnection()
   }, [])
 
-  const connectWallet = async () => {
+  const handleConnect = async () => {
     setIsConnecting(true)
     setError(null)
-
     try {
-      if (!window.ethereum) {
-        throw new Error("No Ethereum wallet found. Please install MetaMask or another wallet.")
+      const result = await connectWallet()
+      if (result.success) {
+        setAccount(result.address)
+        const bal = await getWalletBalance(result.address)
+        setBalance(formatEthAmount(ethers.parseEther(bal), 4))
+      } else {
+        setError("Failed to connect wallet")
       }
-
-      const provider = new ethers.providers.Web3Provider(window.ethereum)
-      const accounts = await provider.send("eth_requestAccounts", [])
-
-      if (accounts.length > 0) {
-        setAccount(accounts[0])
-        await getBalance(accounts[0])
-      }
-    } catch (err: any) {
-      console.error("Error connecting wallet:", err)
-      setError(err.message || "Failed to connect wallet")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to connect wallet")
     } finally {
       setIsConnecting(false)
     }
   }
 
-  const getBalance = async (address: string) => {
-    try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum)
-      const balance = await provider.getBalance(address)
-      setBalance(ethers.utils.formatEther(balance).substring(0, 6))
-    } catch (err) {
-      console.error("Error getting balance:", err)
-    }
-  }
-
-  const disconnectWallet = () => {
-    setAccount(null)
-    setBalance(null)
-  }
-
-  const formatAddress = (address: string) => {
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`
-  }
+  const formatAddress = (address: string) =>
+    `${address.slice(0, 6)}…${address.slice(-4)}`
 
   return (
     <div className="flex flex-col gap-4">
@@ -78,22 +60,24 @@ export function WalletConnect() {
       )}
 
       {!account ? (
-        <Button onClick={connectWallet} disabled={isConnecting} className="flex items-center gap-2">
+        <Button onClick={handleConnect} disabled={isConnecting} className="flex items-center gap-2">
           <Wallet className="h-4 w-4" />
-          {isConnecting ? "Connecting..." : "Connect Wallet"}
+          {isConnecting ? "Connecting…" : "Connect wallet"}
         </Button>
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+          <div className="flex items-center justify-between rounded-md bg-muted p-3">
             <div className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
               <span className="font-medium">{formatAddress(account)}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={disconnectWallet}>
+            <Button variant="outline" size="sm" onClick={() => { setAccount(null); setBalance(null) }}>
               Disconnect
             </Button>
           </div>
-          {balance && <div className="text-sm text-muted-foreground">Balance: {balance} ETH</div>}
+          {balance !== null && (
+            <p className="text-sm text-muted-foreground">Balance: {balance}</p>
+          )}
         </div>
       )}
     </div>
