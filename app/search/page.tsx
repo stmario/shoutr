@@ -7,10 +7,10 @@ import { search } from "@/app/actions/explore-actions"
 import { redirect } from "next/navigation"
 
 interface SearchPageProps {
-  searchParams: {
-    q: string
+  searchParams: Promise<{
+    q?: string
     tab?: string
-  }
+  }>
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
@@ -20,8 +20,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     redirect("/login")
   }
 
-  const query = searchParams.q || ""
-  const tab = searchParams.tab || "all"
+  const { q, tab: tabParam } = await searchParams
+  const query = q || ""
+  const tab = tabParam || "all"
 
   if (!query) {
     redirect("/explore")
