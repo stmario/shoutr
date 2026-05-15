@@ -2,7 +2,7 @@ import type React from "react"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppSidebar } from "@/components/app-sidebar"
-import { NewsSidebar } from "@/components/news-sidebar"
+import { IcoSidebar } from "@/components/ico/ico-sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { WalletSessionGuard } from "@/components/wallet-session-guard"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -32,7 +32,7 @@ export default function RootLayout({
               <div className="flex w-full max-w-screen-2xl min-h-screen shadow-sm">
                 <AppSidebar />
                 <main className="min-h-screen min-w-0 flex-1 border-x border-border">{children}</main>
-                <NewsSidebar />
+                <IcoSidebar />
               </div>
             </div>
             <Toaster />

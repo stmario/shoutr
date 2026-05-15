@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { ImageIcon, Smile, MapPin, Calendar, Loader2 } from "lucide-react"
+import { ImageIcon, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
 import { useToast } from "@/hooks/use-toast"
 import { ShoutImageAttachmentPanel, useShoutImageAttachment } from "@/components/shout-image-attachment"
@@ -112,15 +112,6 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
               title="Add image"
             >
               <ImageIcon className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8" disabled={busy}>
-              <Smile className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8" disabled={busy}>
-              <MapPin className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8" disabled={busy}>
-              <Calendar className="h-5 w-5" />
             </Button>
           </div>
           <div className="flex items-center gap-3">
