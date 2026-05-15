@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { shouts, hashtags, shoutHashtags, votes, reshouts, comments } from "@/lib/schema"
+import { shouts, hashtags, shoutHashtags, votes, reshouts, comments, users } from "@/lib/schema"
 import { eq, and, desc, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
@@ -85,6 +85,7 @@ export async function createShout(formData: FormData) {
         user_id: currentUser.id,
         username: currentUser.username,
         avatar_url: currentUser.avatar_url,
+        wallet_address: currentUser.wallet_address,
         vote_count: 0,
         comments_count: 0,
         reshouts_count: 0,
@@ -172,14 +173,15 @@ export async function getShoutById(id: number) {
       created_at: shouts.created_at,
       image_url: shouts.image_url,
       user_id: shouts.user_id,
-      username: sql<string>`users.username`,
-      avatar_url: sql<string>`users.avatar_url`,
+      username: users.username,
+      avatar_url: users.avatar_url,
+      wallet_address: users.wallet_address,
       vote_count: shouts.vote_count,
-      comment_count: count(comments.shout_id).as("comment_count"),
-      reshout_count: count(reshouts.shout_id).as("reshout_count"),
+      comments_count: count(comments.shout_id).as("comments_count"),
+      reshouts_count: count(reshouts.shout_id).as("reshouts_count"),
     })
     .from(shouts)
-    .innerJoin("users", eq(shouts.user_id, sql`users.id`))
+    .innerJoin(users, eq(shouts.user_id, users.id))
     .leftJoin(comments, eq(shouts.id, comments.shout_id))
     .leftJoin(reshouts, eq(shouts.id, reshouts.shout_id))
     .where(eq(shouts.id, id))
@@ -190,11 +192,18 @@ export async function getShoutById(id: number) {
       shouts.image_url,
       shouts.user_id,
       shouts.vote_count,
-      sql`users.username`,
-      sql`users.avatar_url`,
+      users.username,
+      users.avatar_url,
+      users.wallet_address,
     )
 
-  return result[0] || null
+  const row = result[0]
+  if (!row) return null
+
+  return {
+    ...row,
+    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
+  }
 }
 
 export async function getFeedShouts(userId?: number, limit = 20, offset = 0) {

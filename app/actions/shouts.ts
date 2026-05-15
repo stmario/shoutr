@@ -15,6 +15,7 @@ export type Shout = {
   user_id: number
   username: string
   avatar_url: string | null
+  wallet_address: string | null
   vote_count: number
   comments_count: number
   reshouts_count: number
@@ -32,6 +33,7 @@ export async function getShouts(limit = 10, offset = 0): Promise<Shout[]> {
         s.user_id,
         u.username,
         u.avatar_url,
+        u.wallet_address,
         s.like_count as vote_count,
         (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
         (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count
@@ -486,6 +488,7 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         s.user_id,
         u.username,
         u.avatar_url,
+        u.wallet_address,
         s.like_count as vote_count,
         (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
         (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count

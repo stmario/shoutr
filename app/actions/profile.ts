@@ -66,7 +66,8 @@ export async function getUserShouts(userId: number, limit = 10, offset = 0) {
         s.user_id,
         u.username,
         u.avatar_url,
-        (SELECT COUNT(*) FROM likes WHERE shout_id = s.id) as likes_count,
+        u.wallet_address,
+        s.like_count as vote_count,
         (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
         (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count
       FROM shouts s

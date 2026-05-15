@@ -85,6 +85,7 @@ export async function getBookmarkedShouts(limit = 20, offset = 0) {
         s.like_count AS vote_count,
         u.username,
         u.avatar_url,
+        u.wallet_address,
         b.created_at AS bookmarked_at,
         (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) AS comments_count,
         (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) AS reshouts_count

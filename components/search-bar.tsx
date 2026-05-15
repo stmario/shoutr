@@ -174,8 +174,7 @@ function SearchResultItem({ result, onClick }: { result: SearchResult; onClick: 
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="text-sm">
-              <span className="font-semibold">{result.username}</span>
-              <span className="text-muted-foreground"> @{result.username}</span>
+              <span className="font-semibold">@{result.username}</span>
               <span className="text-muted-foreground"> · {formattedDate}</span>
             </div>
             <div className="text-sm truncate">{result.content}</div>

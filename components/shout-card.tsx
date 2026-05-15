@@ -12,6 +12,7 @@ import { addBookmark, removeBookmark, isBookmarked } from "@/app/actions/bookmar
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import Image from "next/image"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { voteOnPost, getVoteCount, getUserVote as getBlockchainUserVote } from "@/lib/contract"
 
 interface ShoutCardProps {
@@ -23,6 +24,7 @@ interface ShoutCardProps {
     user_id: number
     username: string
     avatar_url?: string
+    wallet_address?: string | null
     vote_count: number
     comments_count: number
     reshouts_count: number
@@ -235,12 +237,22 @@ export function ShoutCard({
         </Link>
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
-            <Link href={`/profile/${shout.username}`} className="font-semibold hover:underline">
-              {shout.username}
-            </Link>
-            <Link href={`/profile/${shout.username}`} className="text-muted-foreground text-sm hover:underline">
-              @{shout.username}
-            </Link>
+            {shout.wallet_address ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href={`/profile/${shout.username}`} className="font-semibold hover:underline">
+                    @{shout.username}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent className="font-mono text-xs max-w-xs break-all">
+                  {shout.wallet_address}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link href={`/profile/${shout.username}`} className="font-semibold hover:underline">
+                @{shout.username}
+              </Link>
+            )}
             <span className="text-muted-foreground text-sm">·</span>
             <span className="text-muted-foreground text-sm">{formattedDate}</span>
           </div>

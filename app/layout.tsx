@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AppSidebar } from "@/components/app-sidebar"
 import { NewsSidebar } from "@/components/news-sidebar"
 import { Toaster } from "@/components/ui/toaster"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
 export const metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <TooltipProvider delayDuration={200}>
           <SidebarProvider>
             <div className="relative flex min-h-screen w-full justify-center">
               <div className="flex w-full max-w-screen-2xl min-h-screen shadow-sm">
@@ -31,6 +33,7 @@ export default function RootLayout({
             </div>
             <Toaster />
           </SidebarProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
