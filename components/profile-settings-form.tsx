@@ -17,8 +17,6 @@ interface ProfileSettingsFormProps {
   user: {
     id: number
     username: string
-    display_name: string
-    email: string
     bio: string | null
     avatar_url: string | null
     location?: string | null
@@ -120,10 +118,10 @@ export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
           onClick={handleImageClick}
         >
           {imagePreview ? (
-            <Image src={imagePreview || "/placeholder.svg"} alt={user.display_name} fill className="object-cover" />
+            <Image src={imagePreview || "/placeholder.svg"} alt={user.username} fill className="object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted text-2xl font-bold text-muted-foreground">
-              {user.display_name.charAt(0)}
+              {user.username.charAt(0)}
             </div>
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -138,11 +136,6 @@ export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="display_name">Display Name</Label>
-          <Input id="display_name" name="display_name" defaultValue={user.display_name} maxLength={50} required />
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="bio">Bio</Label>
           <Textarea

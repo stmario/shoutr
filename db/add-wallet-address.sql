@@ -1,0 +1,1 @@
+-- Use `neon-users-align.sql` instead (adds wallet_address and all other user columns).

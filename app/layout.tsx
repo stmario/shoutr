@@ -22,10 +22,12 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SidebarProvider>
-            <div className="relative flex min-h-screen">
-              <AppSidebar />
-              <main className="flex-1 w-full max-w-full border-x border-border min-h-screen">{children}</main>
-              <NewsSidebar />
+            <div className="relative flex min-h-screen w-full justify-center">
+              <div className="flex w-full max-w-screen-2xl min-h-screen shadow-sm">
+                <AppSidebar />
+                <main className="min-h-screen min-w-0 flex-1 border-x border-border">{children}</main>
+                <NewsSidebar />
+              </div>
             </div>
             <Toaster />
           </SidebarProvider>

@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { users, shouts, hashtags, shoutHashtags, follows, comments, reshouts } from "@/lib/schema"
-import { eq, like, and, or, desc, count, sql } from "drizzle-orm"
+import { eq, like, and, desc, count, sql } from "drizzle-orm"
 import { getCurrentUser } from "@/lib/auth"
 
 export type SearchResult = {
@@ -10,7 +10,6 @@ export type SearchResult = {
   id: number
   content?: string
   username?: string
-  display_name?: string
   avatar_url?: string | null
   hashtag_name?: string
   created_at: string
@@ -40,12 +39,11 @@ export async function search(
           type: sql<"user">`'user'`,
           id: users.id,
           username: users.username,
-          display_name: users.display_name,
           avatar_url: users.avatar_url,
           created_at: users.created_at,
         })
         .from(users)
-        .where(or(like(sql`LOWER(${users.username})`, searchTerm), like(sql`LOWER(${users.display_name})`, searchTerm)))
+        .where(like(sql`LOWER(${users.username})`, searchTerm))
         .orderBy(
           sql`CASE 
             WHEN LOWER(${users.username}) = LOWER(${query.trim().toLowerCase()}) THEN 0
@@ -69,7 +67,6 @@ export async function search(
           content: shouts.content,
           created_at: shouts.created_at,
           username: sql<string>`users.username`,
-          display_name: sql<string>`users.display_name`,
           avatar_url: sql<string>`users.avatar_url`,
         })
         .from(shouts)
@@ -157,7 +154,6 @@ export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset
         image_url: shouts.image_url,
         user_id: shouts.user_id,
         username: sql<string>`users.username`,
-        display_name: sql<string>`users.display_name`,
         avatar_url: sql<string>`users.avatar_url`,
         vote_count: shouts.vote_count,
         comments_count: count(comments.shout_id).as("comments_count"),
@@ -178,7 +174,6 @@ export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset
         shouts.user_id,
         shouts.vote_count,
         sql`users.username`,
-        sql`users.display_name`,
         sql`users.avatar_url`,
       )
       .orderBy(desc(shouts.created_at))
@@ -203,7 +198,6 @@ export async function getSuggestedUsers(limit = 5) {
       .select({
         id: users.id,
         username: users.username,
-        display_name: users.display_name,
         avatar_url: users.avatar_url,
         followers_count: count(follows.follower_id).as("followers_count"),
       })
@@ -218,7 +212,7 @@ export async function getSuggestedUsers(limit = 5) {
           )`,
         ),
       )
-      .groupBy(users.id, users.username, users.display_name, users.avatar_url)
+      .groupBy(users.id, users.username, users.avatar_url)
       .orderBy(desc(sql`followers_count`))
       .limit(limit)
 
@@ -240,7 +234,6 @@ export async function getRecentPopularShouts(limit = 10) {
         image_url: shouts.image_url,
         user_id: shouts.user_id,
         username: sql<string>`users.username`,
-        display_name: sql<string>`users.display_name`,
         avatar_url: sql<string>`users.avatar_url`,
         vote_count: shouts.vote_count,
         comments_count: count(comments.shout_id).as("comments_count"),
@@ -269,7 +262,6 @@ export async function getRecentPopularShouts(limit = 10) {
         shouts.user_id,
         shouts.vote_count,
         sql`users.username`,
-        sql`users.display_name`,
         sql`users.avatar_url`,
       )
       .orderBy(desc(shouts.created_at))

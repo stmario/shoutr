@@ -1,9 +1,12 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { notifications, shouts, comments } from "@/lib/schema"
+import { notifications, shouts, comments, users } from "@/lib/schema"
 import { eq, desc, and, sql, count } from "drizzle-orm"
+import { alias } from "drizzle-orm/pg-core"
 import { getCurrentUser } from "@/lib/auth"
+
+const actorUser = alias(users, "actor")
 
 export type Notification = {
   id: number
@@ -12,13 +15,11 @@ export type Notification = {
   is_read: boolean
   actor_id: number
   actor_username: string
-  actor_display_name: string
   actor_avatar_url: string | null
   shout_id?: number
   shout_content?: string
   comment_id?: number
   comment_content?: string
-  vote_type?: number
 }
 
 export type NotificationCount = {
@@ -40,17 +41,15 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
         created_at: notifications.created_at,
         is_read: notifications.is_read,
         actor_id: notifications.actor_id,
-        actor_username: sql<string>`actor.username`,
-        actor_display_name: sql<string>`actor.display_name`,
-        actor_avatar_url: sql<string>`actor.avatar_url`,
+        actor_username: actorUser.username,
+        actor_avatar_url: actorUser.avatar_url,
         shout_id: notifications.shout_id,
-        shout_content: sql<string>`shouts.content`,
+        shout_content: shouts.content,
         comment_id: notifications.comment_id,
-        comment_content: sql<string>`comments.content`,
-        vote_type: notifications.vote_type,
+        comment_content: comments.content,
       })
       .from(notifications)
-      .innerJoin("users as actor", eq(notifications.actor_id, sql`actor.id`))
+      .innerJoin(actorUser, eq(notifications.actor_id, actorUser.id))
       .leftJoin(shouts, eq(notifications.shout_id, shouts.id))
       .leftJoin(comments, eq(notifications.comment_id, comments.id))
       .where(eq(notifications.user_id, currentUser.id))
@@ -133,7 +132,7 @@ export async function createNotification({
   type,
   shoutId,
   commentId,
-  vote_type,
+  vote_type: _voteType,
 }: {
   userId: number
   actorId: number
@@ -159,8 +158,6 @@ export async function createNotification({
           eq(notifications.type, type),
           shoutId ? eq(notifications.shout_id, shoutId) : sql`1=1`,
           commentId ? eq(notifications.comment_id, commentId) : sql`1=1`,
-          // For vote notifications, we need to check if the vote type is the same
-          vote_type !== undefined ? eq(notifications.vote_type, vote_type) : sql`1=1`,
         ),
       )
       .limit(1)
@@ -172,7 +169,6 @@ export async function createNotification({
         .set({
           is_read: false,
           created_at: new Date(),
-          vote_type: vote_type, // Update vote type in case it changed
         })
         .where(eq(notifications.id, existingNotification[0].id))
 
@@ -188,7 +184,6 @@ export async function createNotification({
         type,
         shout_id: shoutId,
         comment_id: commentId,
-        vote_type: vote_type,
         is_read: false,
       })
       .returning()

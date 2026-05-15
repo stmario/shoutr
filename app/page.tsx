@@ -15,7 +15,10 @@ export default async function Home() {
 
       {user && (
         <div className="border-b p-4">
-          <ComposeShout />
+          <ComposeShout
+            username={user.username}
+            avatarUrl={user.avatar_url ?? undefined}
+          />
         </div>
       )}
 

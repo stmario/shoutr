@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast"
 
 interface NotificationSettingsProps {
   initialSettings: {
-    email_notifications?: boolean
     push_notifications?: boolean
     mention_notifications?: boolean
     follow_notifications?: boolean
@@ -27,7 +26,6 @@ interface NotificationSettingsProps {
 
 export function NotificationSettings({ initialSettings }: NotificationSettingsProps) {
   const [settings, setSettings] = useState({
-    email_notifications: initialSettings?.email_notifications ?? true,
     push_notifications: initialSettings?.push_notifications ?? true,
     mention_notifications: initialSettings?.mention_notifications ?? true,
     follow_notifications: initialSettings?.follow_notifications ?? true,
@@ -97,17 +95,6 @@ export function NotificationSettings({ initialSettings }: NotificationSettingsPr
 
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Delivery Methods</h3>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="email_notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications via email</p>
-                </div>
-                <Switch
-                  id="email_notifications"
-                  checked={settings.email_notifications}
-                  onCheckedChange={() => handleToggle("email_notifications")}
-                />
-              </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="push_notifications">Push Notifications</Label>

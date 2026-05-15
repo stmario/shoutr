@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, ArrowDown } from "lucide-react"
+import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp } from "lucide-react"
 import Link from "next/link"
 
 interface NotificationItemProps {
@@ -13,13 +13,11 @@ interface NotificationItemProps {
     is_read: boolean
     actor_id: number
     actor_username: string
-    actor_display_name: string
     actor_avatar_url?: string
     shout_id?: number
     shout_content?: string
     comment_id?: number
     comment_content?: string
-    vote_type?: number
   }
 }
 
@@ -31,11 +29,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       case "like":
         return <Heart className="h-4 w-4 text-red-500" />
       case "vote":
-        return notification.vote_type === 1 ? (
-          <ArrowUp className="h-4 w-4 text-green-500" />
-        ) : (
-          <ArrowDown className="h-4 w-4 text-red-500" />
-        )
+        return <ArrowUp className="h-4 w-4 text-green-500" />
       case "follow":
         return <UserPlus className="h-4 w-4 text-blue-500" />
       case "comment":
@@ -52,30 +46,28 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       case "like":
         return (
           <>
-            <span className="font-semibold">{notification.actor_display_name}</span>
+            <span className="font-semibold">{notification.actor_username}</span>
             <span className="text-muted-foreground"> liked your shout</span>
           </>
         )
       case "vote":
         return (
           <>
-            <span className="font-semibold">{notification.actor_display_name}</span>
-            <span className="text-muted-foreground">
-              {notification.vote_type === 1 ? " upvoted" : " downvoted"} your shout
-            </span>
+            <span className="font-semibold">{notification.actor_username}</span>
+            <span className="text-muted-foreground"> voted on your shout</span>
           </>
         )
       case "follow":
         return (
           <>
-            <span className="font-semibold">{notification.actor_display_name}</span>
+            <span className="font-semibold">{notification.actor_username}</span>
             <span className="text-muted-foreground"> followed you</span>
           </>
         )
       case "comment":
         return (
           <>
-            <span className="font-semibold">{notification.actor_display_name}</span>
+            <span className="font-semibold">{notification.actor_username}</span>
             <span className="text-muted-foreground"> commented on your shout</span>
             {notification.comment_content && (
               <p className="text-sm text-muted-foreground line-clamp-1 mt-1">"{notification.comment_content}"</p>
@@ -85,7 +77,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       case "reshout":
         return (
           <>
-            <span className="font-semibold">{notification.actor_display_name}</span>
+            <span className="font-semibold">{notification.actor_username}</span>
             <span className="text-muted-foreground"> reshouted your post</span>
           </>
         )
@@ -113,9 +105,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       <Avatar className="h-10 w-10">
         <AvatarImage
           src={notification.actor_avatar_url || "/placeholder.svg?height=40&width=40"}
-          alt={notification.actor_display_name}
+          alt={notification.actor_username}
         />
-        <AvatarFallback>{notification.actor_display_name.charAt(0)}</AvatarFallback>
+        <AvatarFallback>{notification.actor_username.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex flex-col flex-1">
         <div className="flex items-center gap-2">

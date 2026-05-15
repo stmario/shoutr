@@ -9,17 +9,16 @@ import { followUser } from "@/app/actions/user-actions"
 import { useToast } from "@/hooks/use-toast"
 
 interface SuggestedUsersProps {
-  users: {
+  users?: {
     id: number
     username: string
-    display_name: string
     avatar_url: string | null
     followers_count: number
   }[]
-  currentUserId: number
+  currentUserId?: number
 }
 
-export function SuggestedUsers({ users, currentUserId }: SuggestedUsersProps) {
+export function SuggestedUsers({ users = [], currentUserId = 0 }: SuggestedUsersProps) {
   const [followingState, setFollowingState] = useState<Record<number, boolean>>({})
   const [loadingState, setLoadingState] = useState<Record<number, boolean>>({})
   const { toast } = useToast()
@@ -61,13 +60,15 @@ export function SuggestedUsers({ users, currentUserId }: SuggestedUsersProps) {
           <div key={user.id} className="flex items-center gap-3">
             <Link href={`/profile/${user.username}`}>
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={user.display_name} />
-                <AvatarFallback>{user.display_name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={user.username} />
+                <AvatarFallback>
+                  {(user.username?.trim() || "?").charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
             </Link>
             <div className="flex-1 min-w-0">
               <Link href={`/profile/${user.username}`} className="hover:underline">
-                <div className="font-medium truncate">{user.display_name}</div>
+                <div className="font-medium truncate">{user.username}</div>
               </Link>
               <div className="text-sm text-muted-foreground truncate">@{user.username}</div>
             </div>
@@ -76,7 +77,7 @@ export function SuggestedUsers({ users, currentUserId }: SuggestedUsersProps) {
               className={followingState[user.id] ? "" : "bg-purple-700 hover:bg-purple-800"}
               variant={followingState[user.id] ? "outline" : "default"}
               onClick={() => handleFollow(user.id)}
-              disabled={loadingState[user.id] || followingState[user.id]}
+              disabled={currentUserId <= 0 || loadingState[user.id] || followingState[user.id]}
             >
               {followingState[user.id] ? "Following" : "Follow"}
             </Button>

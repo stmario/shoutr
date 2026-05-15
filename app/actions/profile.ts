@@ -6,7 +6,6 @@ import { getCurrentUser } from "./auth"
 export type ProfileUser = {
   id: number
   username: string
-  display_name: string
   bio: string | null
   avatar_url: string | null
   created_at: string
@@ -26,7 +25,6 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
       SELECT 
         u.id, 
         u.username, 
-        u.display_name, 
         u.bio, 
         u.avatar_url, 
         u.created_at,
@@ -67,7 +65,6 @@ export async function getUserShouts(userId: number, limit = 10, offset = 0) {
         s.image_url,
         s.user_id,
         u.username,
-        u.display_name,
         u.avatar_url,
         (SELECT COUNT(*) FROM likes WHERE shout_id = s.id) as likes_count,
         (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,

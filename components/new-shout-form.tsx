@@ -18,7 +18,6 @@ interface NewShoutFormProps {
   user: {
     id: number
     username: string
-    display_name: string
     avatar_url?: string
   }
 }
@@ -147,7 +146,7 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
           <div className="flex gap-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={`@${user.username}`} />
-              <AvatarFallback>{user.display_name.charAt(0)}</AvatarFallback>
+              <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <Textarea

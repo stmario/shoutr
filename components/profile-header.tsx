@@ -22,14 +22,14 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
               {profile.avatar_url ? (
                 <Image
                   src={profile.avatar_url || "/placeholder.svg"}
-                  alt={profile.display_name}
+                  alt={profile.username}
                   width={128}
                   height={128}
                   className="object-cover h-full w-full"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-muted text-4xl font-bold text-muted-foreground">
-                  {profile.display_name.charAt(0)}
+                  {profile.username.charAt(0)}
                 </div>
               )}
             </div>
@@ -49,7 +49,7 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
         </div>
 
         <div className="mt-16 pb-4">
-          <h1 className="text-2xl font-bold">{profile.display_name}</h1>
+          <h1 className="text-2xl font-bold">{profile.username}</h1>
           <p className="text-muted-foreground">@{profile.username}</p>
 
           {profile.bio && <p className="mt-3">{profile.bio}</p>}

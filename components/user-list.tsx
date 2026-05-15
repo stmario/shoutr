@@ -49,13 +49,13 @@ export function UserList({ users, currentUserId }: UserListProps) {
           <div className="flex items-center gap-3">
             <Link href={`/profile/${user.username}`}>
               <Avatar className="h-12 w-12">
-                <AvatarImage src={user.avatar_url || "/placeholder.svg?height=48&width=48"} alt={user.display_name} />
-                <AvatarFallback>{user.display_name?.charAt(0) || "?"}</AvatarFallback>
+                <AvatarImage src={user.avatar_url || "/placeholder.svg?height=48&width=48"} alt={user.username ?? ""} />
+                <AvatarFallback>{user.username?.charAt(0) || "?"}</AvatarFallback>
               </Avatar>
             </Link>
             <div className="flex-1 min-w-0">
               <Link href={`/profile/${user.username}`} className="hover:underline">
-                <div className="font-medium">{user.display_name}</div>
+                <div className="font-medium">{user.username}</div>
               </Link>
               <div className="text-sm text-muted-foreground">@{user.username}</div>
             </div>

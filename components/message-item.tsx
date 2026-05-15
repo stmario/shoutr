@@ -22,9 +22,9 @@ export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
           <Avatar className="h-8 w-8">
             <AvatarImage
               src={message.sender_avatar_url || "/placeholder.svg?height=32&width=32"}
-              alt={message.sender_display_name || ""}
+              alt={message.sender_username || ""}
             />
-            <AvatarFallback>{message.sender_display_name?.charAt(0) || "?"}</AvatarFallback>
+            <AvatarFallback>{message.sender_username?.charAt(0) || "?"}</AvatarFallback>
           </Avatar>
         </div>
         <span className="text-xs text-muted-foreground mt-1 mr-10">{formattedDate}</span>
@@ -38,9 +38,9 @@ export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
         <Avatar className="h-8 w-8">
           <AvatarImage
             src={message.sender_avatar_url || "/placeholder.svg?height=32&width=32"}
-            alt={message.sender_display_name || ""}
+            alt={message.sender_username || ""}
           />
-          <AvatarFallback>{message.sender_display_name?.charAt(0) || "?"}</AvatarFallback>
+          <AvatarFallback>{message.sender_username?.charAt(0) || "?"}</AvatarFallback>
         </Avatar>
         <div className="max-w-[75%] bg-gray-200 dark:bg-gray-800 p-3 rounded-lg rounded-bl-none">
           <p>{message.content}</p>

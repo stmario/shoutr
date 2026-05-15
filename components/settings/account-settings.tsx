@@ -16,14 +16,12 @@ interface AccountSettingsProps {
   user: {
     id: number
     username: string
-    email: string
   }
 }
 
 export function AccountSettings({ user }: AccountSettingsProps) {
   const [formData, setFormData] = useState({
     username: user.username || "",
-    email: user.email || "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -90,13 +88,6 @@ export function AccountSettings({ user }: AccountSettingsProps) {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
-              <p className="text-sm text-muted-foreground">
-                Changing your email will require verification of the new email address.
-              </p>
-            </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" className="bg-purple-700 hover:bg-purple-800" disabled={isSubmitting}>

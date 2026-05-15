@@ -7,13 +7,14 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 interface ShoutPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ShoutPage({ params }: ShoutPageProps) {
-  const shoutId = Number.parseInt(params.id)
+  const { id } = await params
+  const shoutId = Number.parseInt(id)
 
   if (isNaN(shoutId)) {
     notFound()

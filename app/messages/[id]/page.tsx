@@ -9,13 +9,14 @@ import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface ConversationPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function ConversationPage({ params }: ConversationPageProps) {
-  const conversationId = Number.parseInt(params.id)
+  const { id } = await params
+  const conversationId = Number.parseInt(id)
 
   if (isNaN(conversationId)) {
     notFound()
@@ -50,12 +51,12 @@ export default async function ConversationPage({ params }: ConversationPageProps
             <Avatar className="h-8 w-8">
               <AvatarImage
                 src={otherParticipant.avatar_url || "/placeholder.svg?height=32&width=32"}
-                alt={otherParticipant.display_name}
+                alt={otherParticipant.username}
               />
-              <AvatarFallback>{otherParticipant.display_name.charAt(0)}</AvatarFallback>
+              <AvatarFallback>{otherParticipant.username.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="font-bold">{otherParticipant.display_name}</h1>
+              <h1 className="font-bold">{otherParticipant.username}</h1>
               <p className="text-xs text-muted-foreground">@{otherParticipant.username}</p>
             </div>
           </div>

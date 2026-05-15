@@ -7,13 +7,13 @@ import { getCurrentUser } from "@/app/actions/auth"
 import { notFound } from "next/navigation"
 
 interface ProfilePageProps {
-  params: {
+  params: Promise<{
     username: string
-  }
+  }>
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { username } = params
+  const { username } = await params
   const profile = await getUserProfile(username)
 
   if (!profile) {
@@ -30,7 +30,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <header className="sticky top-0 z-10 flex h-14 items-center border-b bg-background/95 backdrop-blur">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="md:hidden" />
-          <h1 className="text-xl font-bold">{profile.display_name}</h1>
+          <h1 className="text-xl font-bold">{profile.username}</h1>
         </div>
       </header>
 

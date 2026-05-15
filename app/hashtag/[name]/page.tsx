@@ -6,13 +6,13 @@ import { notFound, redirect } from "next/navigation"
 import { Hash } from "lucide-react"
 
 interface HashtagPageProps {
-  params: {
+  params: Promise<{
     name: string
-  }
+  }>
 }
 
 export default async function HashtagPage({ params }: HashtagPageProps) {
-  const { name } = params
+  const { name } = await params
   const decodedName = decodeURIComponent(name)
 
   const user = await getCurrentUser()

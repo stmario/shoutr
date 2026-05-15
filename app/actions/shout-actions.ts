@@ -163,7 +163,6 @@ export async function getShoutById(id: number) {
       image_url: shouts.image_url,
       user_id: shouts.user_id,
       username: sql<string>`users.username`,
-      display_name: sql<string>`users.display_name`,
       avatar_url: sql<string>`users.avatar_url`,
       vote_count: shouts.vote_count,
       comment_count: count(comments.shout_id).as("comment_count"),
@@ -182,7 +181,6 @@ export async function getShoutById(id: number) {
       shouts.user_id,
       shouts.vote_count,
       sql`users.username`,
-      sql`users.display_name`,
       sql`users.avatar_url`,
     )
 
@@ -198,7 +196,6 @@ export async function getFeedShouts(userId?: number, limit = 20, offset = 0) {
       image_url: shouts.image_url,
       user_id: shouts.user_id,
       username: sql<string>`users.username`,
-      display_name: sql<string>`users.display_name`,
       avatar_url: sql<string>`users.avatar_url`,
       vote_count: shouts.vote_count,
       comments_count: count(comments.shout_id).as("comments_count"),
@@ -216,7 +213,6 @@ export async function getFeedShouts(userId?: number, limit = 20, offset = 0) {
       shouts.user_id,
       shouts.vote_count,
       sql`users.username`,
-      sql`users.display_name`,
       sql`users.avatar_url`,
     )
     .orderBy(desc(shouts.created_at))
@@ -246,7 +242,6 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
       image_url: shouts.image_url,
       user_id: shouts.user_id,
       username: sql<string>`users.username`,
-      display_name: sql<string>`users.display_name`,
       avatar_url: sql<string>`users.avatar_url`,
       vote_count: shouts.vote_count,
       comments_count: count(comments.shout_id).as("comments_count"),
@@ -265,7 +260,6 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
       shouts.user_id,
       shouts.vote_count,
       sql`users.username`,
-      sql`users.display_name`,
       sql`users.avatar_url`,
     )
     .orderBy(desc(shouts.created_at))
@@ -295,8 +289,8 @@ export async function likeShout(userId: number, shoutId: number) {
       .set({
         vote_count: sql`CASE 
           WHEN EXISTS (SELECT 1 FROM votes WHERE user_id = ${userId} AND shout_id = ${shoutId} AND vote_type = -1) 
-          THEN vote_count + 2 
-          ELSE vote_count + 1 
+          THEN ${shouts.vote_count} + 2 
+          ELSE ${shouts.vote_count} + 1 
         END`,
       })
       .where(eq(shouts.id, shoutId))
@@ -345,7 +339,7 @@ export async function unlikeShout(userId: number, shoutId: number) {
       await db
         .update(shouts)
         .set({
-          vote_count: sql`vote_count - ${voteType}`,
+          vote_count: sql`${shouts.vote_count} - ${voteType}`,
         })
         .where(eq(shouts.id, shoutId))
     }
@@ -439,7 +433,6 @@ export async function getCommentsByShoutId(shoutId: number) {
       created_at: comments.created_at,
       user_id: comments.user_id,
       username: sql<string>`users.username`,
-      display_name: sql<string>`users.display_name`,
       avatar_url: sql<string>`users.avatar_url`,
     })
     .from(comments)
@@ -475,7 +468,6 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         image_url: shouts.image_url,
         user_id: shouts.user_id,
         username: sql<string>`users.username`,
-        display_name: sql<string>`users.display_name`,
         avatar_url: sql<string>`users.avatar_url`,
         vote_count: shouts.vote_count,
         comments_count: count(comments.shout_id).as("comments_count"),
@@ -495,7 +487,6 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         shouts.user_id,
         shouts.vote_count,
         sql`users.username`,
-        sql`users.display_name`,
         sql`users.avatar_url`,
       )
       .orderBy(desc(votes.created_at))

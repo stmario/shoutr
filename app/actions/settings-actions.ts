@@ -1,12 +1,11 @@
 "use server"
 
+import { cookies } from "next/headers"
 import { executeQuery } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
-import bcrypt from "bcryptjs"
 
 export interface ProfileSettings {
-  display_name?: string
   bio?: string
   avatar_url?: string
   location?: string
@@ -29,13 +28,6 @@ export interface NotificationSettings {
   message_notifications?: boolean
 }
 
-export interface SecuritySettings {
-  current_password: string
-  new_password: string
-  confirm_password: string
-}
-
-// Update profile settings
 export async function updateProfileSettings(settings: ProfileSettings) {
   try {
     const currentUser = await getCurrentUser()
@@ -47,12 +39,6 @@ export async function updateProfileSettings(settings: ProfileSettings) {
     const updates = []
     const values = []
     let paramIndex = 1
-
-    if (settings.display_name !== undefined) {
-      updates.push(`display_name = $${paramIndex}`)
-      values.push(settings.display_name)
-      paramIndex++
-    }
 
     if (settings.bio !== undefined) {
       updates.push(`bio = $${paramIndex}`)
@@ -88,7 +74,7 @@ export async function updateProfileSettings(settings: ProfileSettings) {
 
     const result = await executeQuery(
       `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex} 
-       RETURNING id, username, display_name, bio, avatar_url, location, website, updated_at`,
+       RETURNING id, username, bio, avatar_url, location, website, updated_at`,
       values,
     )
 
@@ -129,9 +115,6 @@ export async function updateAccountSettings(settings: AccountSettings) {
       updates.push(`email = $${paramIndex}`)
       values.push(settings.email)
       paramIndex++
-
-      // Set email_verified to false since the email has changed
-      updates.push(`email_verified = false`)
     }
 
     if (settings.username !== undefined) {
@@ -286,51 +269,8 @@ export async function getNotificationSettings() {
   }
 }
 
-// Change password
-export async function changePassword(settings: SecuritySettings) {
-  try {
-    const currentUser = await getCurrentUser()
-
-    if (!currentUser) {
-      return { success: false, message: "You must be logged in to change your password" }
-    }
-
-    // Verify current password
-    const userResult = await executeQuery(`SELECT password_hash FROM users WHERE id = $1`, [currentUser.id])
-
-    if (userResult.length === 0) {
-      return { success: false, message: "User not found" }
-    }
-
-    const passwordMatch = await bcrypt.compare(settings.current_password, userResult[0].password_hash)
-
-    if (!passwordMatch) {
-      return { success: false, message: "Current password is incorrect" }
-    }
-
-    // Check if new password and confirm password match
-    if (settings.new_password !== settings.confirm_password) {
-      return { success: false, message: "New password and confirm password do not match" }
-    }
-
-    // Hash the new password
-    const newPasswordHash = await bcrypt.hash(settings.new_password, 10)
-
-    // Update password
-    await executeQuery(`UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [
-      newPasswordHash,
-      currentUser.id,
-    ])
-
-    return { success: true, message: "Password changed successfully" }
-  } catch (error) {
-    console.error("Error changing password:", error)
-    return { success: false, message: "Failed to change password" }
-  }
-}
-
-// Delete account
-export async function deleteAccount(password: string) {
+// Delete account (confirm by typing your username exactly)
+export async function deleteAccount(confirmationUsername: string) {
   try {
     const currentUser = await getCurrentUser()
 
@@ -338,21 +278,14 @@ export async function deleteAccount(password: string) {
       return { success: false, message: "You must be logged in to delete your account" }
     }
 
-    // Verify password
-    const userResult = await executeQuery(`SELECT password_hash FROM users WHERE id = $1`, [currentUser.id])
-
-    if (userResult.length === 0) {
-      return { success: false, message: "User not found" }
+    if (confirmationUsername.trim() !== currentUser.username) {
+      return { success: false, message: "Username does not match. Type your exact username to confirm." }
     }
 
-    const passwordMatch = await bcrypt.compare(password, userResult[0].password_hash)
-
-    if (!passwordMatch) {
-      return { success: false, message: "Password is incorrect" }
-    }
-
-    // Delete user
     await executeQuery(`DELETE FROM users WHERE id = $1`, [currentUser.id])
+
+    const cookieStore = await cookies()
+    cookieStore.delete("auth_token")
 
     return { success: true, message: "Account deleted successfully" }
   } catch (error) {

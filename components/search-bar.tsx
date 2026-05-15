@@ -151,11 +151,11 @@ function SearchResultItem({ result, onClick }: { result: SearchResult; onClick: 
       <Link href={`/profile/${result.username}`} onClick={onClick}>
         <div className="flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={result.avatar_url || "/placeholder.svg?height=40&width=40"} alt={result.display_name} />
-            <AvatarFallback>{result.display_name?.charAt(0) || "?"}</AvatarFallback>
+            <AvatarImage src={result.avatar_url || "/placeholder.svg?height=40&width=40"} alt={result.username} />
+            <AvatarFallback>{result.username?.charAt(0) || "?"}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold">{result.display_name}</div>
+            <div className="font-semibold">{result.username}</div>
             <div className="text-sm text-muted-foreground truncate">@{result.username}</div>
           </div>
           <User className="h-4 w-4 text-muted-foreground" />
@@ -169,12 +169,12 @@ function SearchResultItem({ result, onClick }: { result: SearchResult; onClick: 
       <Link href={`/shout/${result.id}`} onClick={onClick}>
         <div className="flex items-start gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={result.avatar_url || "/placeholder.svg?height=32&width=32"} alt={result.display_name} />
-            <AvatarFallback>{result.display_name?.charAt(0) || "?"}</AvatarFallback>
+            <AvatarImage src={result.avatar_url || "/placeholder.svg?height=32&width=32"} alt={result.username} />
+            <AvatarFallback>{result.username?.charAt(0) || "?"}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="text-sm">
-              <span className="font-semibold">{result.display_name}</span>
+              <span className="font-semibold">{result.username}</span>
               <span className="text-muted-foreground"> @{result.username}</span>
               <span className="text-muted-foreground"> · {formattedDate}</span>
             </div>

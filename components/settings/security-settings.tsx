@@ -1,11 +1,8 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, AlertTriangle } from "lucide-react"
@@ -18,80 +15,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { changePassword, deleteAccount } from "@/app/actions/settings-actions"
+import { deleteAccount } from "@/app/actions/settings-actions"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
-export function SecuritySettings() {
-  const [passwordData, setPasswordData] = useState({
-    current_password: "",
-    new_password: "",
-    confirm_password: "",
-  })
-  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+interface SecuritySettingsProps {
+  username: string
+}
+
+export function SecuritySettings({ username }: SecuritySettingsProps) {
+  const [deleteConfirmUsername, setDeleteConfirmUsername] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setPasswordData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setSuccess(false)
-    setIsSubmitting(true)
-
-    // Validate passwords
-    if (passwordData.new_password !== passwordData.confirm_password) {
-      setError("New password and confirm password do not match")
-      setIsSubmitting(false)
-      return
-    }
-
-    if (passwordData.new_password.length < 8) {
-      setError("Password must be at least 8 characters long")
-      setIsSubmitting(false)
-      return
-    }
-
-    try {
-      const result = await changePassword(passwordData)
-
-      if (result.success) {
-        setSuccess(true)
-        setPasswordData({
-          current_password: "",
-          new_password: "",
-          confirm_password: "",
-        })
-        toast({
-          title: "Password changed",
-          description: "Your password has been changed successfully.",
-        })
-      } else {
-        setError(result.message || "Failed to change password")
-      }
-    } catch (err) {
-      console.error(err)
-      setError("An unexpected error occurred")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   const handleDeleteAccount = async () => {
     if (isDeleting) return
 
     setIsDeleting(true)
+    setError("")
     try {
-      const result = await deleteAccount(deleteConfirmPassword)
+      const result = await deleteAccount(deleteConfirmUsername)
 
       if (result.success) {
         toast({
@@ -100,6 +46,7 @@ export function SecuritySettings() {
         })
         setDialogOpen(false)
         router.push("/login")
+        router.refresh()
       } else {
         setError(result.message || "Failed to delete account")
       }
@@ -115,78 +62,9 @@ export function SecuritySettings() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>Update your password to keep your account secure</CardDescription>
+          <CardTitle>Security</CardTitle>
+          <CardDescription>Shoutr uses wallet (SIWE) sign-in only. There is no password to manage.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form id="password-form" onSubmit={handlePasswordSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {success && (
-              <Alert className="mb-4 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                <AlertDescription>Your password has been changed successfully.</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="current_password">Current Password</Label>
-              <Input
-                id="current_password"
-                name="current_password"
-                type="password"
-                value={passwordData.current_password}
-                onChange={handlePasswordChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="new_password">New Password</Label>
-              <Input
-                id="new_password"
-                name="new_password"
-                type="password"
-                value={passwordData.new_password}
-                onChange={handlePasswordChange}
-                required
-              />
-              <p className="text-sm text-muted-foreground">Password must be at least 8 characters long.</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirm_password">Confirm New Password</Label>
-              <Input
-                id="confirm_password"
-                name="confirm_password"
-                type="password"
-                value={passwordData.confirm_password}
-                onChange={handlePasswordChange}
-                required
-              />
-            </div>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <Button
-            type="submit"
-            form="password-form"
-            className="bg-purple-700 hover:bg-purple-800"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Changing Password...
-              </>
-            ) : (
-              "Change Password"
-            )}
-          </Button>
-        </CardFooter>
       </Card>
 
       <Card className="border-red-200 dark:border-red-900">
@@ -221,14 +99,20 @@ export function SecuritySettings() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
                 <p className="text-sm font-medium">
-                  Please enter your password to confirm that you want to delete your account:
+                  Type your username <span className="font-mono text-purple-700">{username}</span> to confirm:
                 </p>
                 <Input
-                  type="password"
-                  placeholder="Enter your password"
-                  value={deleteConfirmPassword}
-                  onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Your username"
+                  value={deleteConfirmUsername}
+                  onChange={(e) => setDeleteConfirmUsername(e.target.value)}
                 />
               </div>
               <DialogFooter>
@@ -238,7 +122,7 @@ export function SecuritySettings() {
                 <Button
                   variant="destructive"
                   onClick={handleDeleteAccount}
-                  disabled={!deleteConfirmPassword || isDeleting}
+                  disabled={deleteConfirmUsername.trim() !== username || isDeleting}
                 >
                   {isDeleting ? (
                     <>

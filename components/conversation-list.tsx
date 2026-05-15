@@ -75,13 +75,13 @@ export function ConversationList() {
               <Avatar className="h-12 w-12">
                 <AvatarImage
                   src={otherParticipant.avatar_url || "/placeholder.svg?height=48&width=48"}
-                  alt={otherParticipant.display_name}
+                  alt={otherParticipant.username}
                 />
-                <AvatarFallback>{otherParticipant.display_name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{otherParticipant.username.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-1">
-                  <h3 className="font-semibold truncate">{otherParticipant.display_name}</h3>
+                  <h3 className="font-semibold truncate">{otherParticipant.username}</h3>
                   {lastMessage && (
                     <span className="text-xs text-muted-foreground whitespace-nowrap">{formattedDate}</span>
                   )}

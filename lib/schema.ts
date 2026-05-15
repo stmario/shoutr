@@ -4,14 +4,13 @@ import { pgTable, serial, text, timestamp, boolean, integer, primaryKey } from "
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  display_name: text("display_name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").unique(),
   password_hash: text("password_hash").notNull(),
   bio: text("bio"),
   location: text("location"),
   website: text("website"),
   avatar_url: text("avatar_url"),
-  wallet_address: text("wallet_address"),
+  wallet_address: text("wallet_address").unique(),
   is_verified: boolean("is_verified").default(false).notNull(),
   verification_token: text("verification_token"),
   reset_token: text("reset_token"),
@@ -27,7 +26,7 @@ export const shouts = pgTable("shouts", {
     .references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   image_url: text("image_url"),
-  vote_count: integer("vote_count").default(0),
+  vote_count: integer("like_count").default(0),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 })
@@ -142,7 +141,6 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(), // vote, reshout, follow, comment, mention, message
   shout_id: integer("shout_id").references(() => shouts.id, { onDelete: "cascade" }),
   comment_id: integer("comment_id").references(() => comments.id, { onDelete: "cascade" }),
-  vote_type: integer("vote_type"), // 1 for upvote, -1 for downvote
   is_read: boolean("is_read").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 })

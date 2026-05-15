@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -14,13 +15,15 @@ import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 
 interface ComposeShoutProps {
-  userId: number
   username: string
-  displayName: string
-  avatarUrl?: string
+  avatarUrl?: string | null
 }
 
-export function ComposeShout({ userId, username, displayName, avatarUrl }: ComposeShoutProps) {
+export function ComposeShout({ username, avatarUrl }: ComposeShoutProps) {
+  const router = useRouter()
+  const showName = username?.trim() || "User"
+  const showHandle = username?.trim() || "user"
+
   const [shoutContent, setShoutContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -91,7 +94,23 @@ export function ComposeShout({ userId, username, displayName, avatarUrl }: Compo
 
     try {
       setIsSubmitting(true)
-      await createShout(userId, shoutContent, imageUrl || undefined)
+      const formData = new FormData()
+      formData.append("content", shoutContent.trim())
+      if (imageUrl) {
+        formData.append("imageUrl", imageUrl)
+      }
+
+      const result = await createShout(formData)
+
+      if (!result.success) {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to post your shout. Please try again.",
+          variant: "destructive",
+        })
+        return
+      }
+
       setShoutContent("")
       setImageUrl(null)
       setImagePreview(null)
@@ -99,6 +118,8 @@ export function ComposeShout({ userId, username, displayName, avatarUrl }: Compo
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
+
+      router.refresh()
 
       toast({
         title: "Shout posted!",
@@ -121,8 +142,8 @@ export function ComposeShout({ userId, username, displayName, avatarUrl }: Compo
       <CardContent className="p-4">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={avatarUrl || "/placeholder.svg?height=40&width=40"} alt={`@${username}`} />
-            <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
+            <AvatarImage src={avatarUrl || "/placeholder.svg?height=40&width=40"} alt={`@${showHandle}`} />
+            <AvatarFallback>{showName.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <Textarea
@@ -163,7 +184,7 @@ export function ComposeShout({ userId, username, displayName, avatarUrl }: Compo
           </div>
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-between items-center border-t mt-2">
+      <CardFooter className="p-4 pt-3 flex justify-between items-center border-t mt-2">
         <div className="flex gap-2">
           <div className="relative">
             <Button

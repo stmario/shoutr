@@ -3,6 +3,18 @@ import { SearchBar } from "@/components/search-bar"
 import { TrendingHashtags } from "@/components/trending-hashtags"
 import { SuggestedUsers } from "@/components/suggested-users"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getTrendingHashtags, getSuggestedUsers } from "@/app/actions/explore-actions"
+import { getCurrentUser } from "@/lib/auth"
+
+async function ExploreTrending() {
+  const hashtags = await getTrendingHashtags(10)
+  return <TrendingHashtags hashtags={hashtags} />
+}
+
+async function ExploreSuggested() {
+  const [users, currentUser] = await Promise.all([getSuggestedUsers(5), getCurrentUser()])
+  return <SuggestedUsers users={users} currentUserId={currentUser?.id ?? 0} />
+}
 
 export default function ExplorePage() {
   return (
@@ -26,7 +38,7 @@ export default function ExplorePage() {
               </div>
             }
           >
-            <TrendingHashtags />
+            <ExploreTrending />
           </Suspense>
 
           <Suspense
@@ -48,7 +60,7 @@ export default function ExplorePage() {
               </div>
             }
           >
-            <SuggestedUsers />
+            <ExploreSuggested />
           </Suspense>
         </div>
       </div>

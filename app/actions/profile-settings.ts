@@ -14,20 +14,14 @@ export async function updateProfile(formData: FormData) {
       return { success: false, message: "You must be logged in to update your profile" }
     }
 
-    const displayName = formData.get("displayName") as string
     const bio = formData.get("bio") as string
     const location = formData.get("location") as string
     const website = formData.get("website") as string
     const walletAddress = formData.get("walletAddress") as string
 
-    if (!displayName || displayName.trim().length === 0) {
-      return { success: false, message: "Display name cannot be empty" }
-    }
-
     await db
       .update(users)
       .set({
-        display_name: displayName,
         bio: bio || null,
         location: location || null,
         website: website || null,

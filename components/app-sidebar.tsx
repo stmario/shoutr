@@ -124,10 +124,10 @@ export async function AppSidebar() {
                       src={user?.avatar_url || "/placeholder.svg?height=32&width=32"}
                       alt={user ? `@${user.username}` : "Guest"}
                     />
-                    <AvatarFallback>{user?.display_name?.charAt(0) || "G"}</AvatarFallback>
+                    <AvatarFallback>{user?.username?.charAt(0) || "G"}</AvatarFallback>
                   </Avatar>
                   <div className="hidden md:block">
-                    <div className="text-sm font-medium">{user?.display_name || "Guest"}</div>
+                    <div className="text-sm font-medium">{user?.username || "Guest"}</div>
                     <div className="text-xs text-muted-foreground">{user ? `@${user.username}` : "Not signed in"}</div>
                   </div>
                   <MoreHorizontal className="ml-auto h-4 w-4 hidden md:block" />
@@ -154,10 +154,7 @@ export async function AppSidebar() {
               ) : (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href="/login">Sign in</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/register">Sign up</Link>
+                    <Link href="/login">Sign in with wallet</Link>
                   </DropdownMenuItem>
                 </>
               )}

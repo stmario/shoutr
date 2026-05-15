@@ -2,6 +2,7 @@
 
 import { ethers } from "ethers"
 import VotesABI from "./VotesABI.json"
+import { createStaticJsonRpcProvider } from "./ethers-read-provider"
 
 // Function to get an Ethereum provider
 export const getProvider = () => {
@@ -9,8 +10,11 @@ export const getProvider = () => {
     return new ethers.BrowserProvider(window.ethereum)
   }
 
-  // Fallback to a read-only provider
-  return new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_ETHEREUM_PROVIDER_URL)
+  const url = process.env.NEXT_PUBLIC_ETHEREUM_PROVIDER_URL
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_ETHEREUM_PROVIDER_URL is not set")
+  }
+  return createStaticJsonRpcProvider(url)
 }
 
 // Function to get the votes contract

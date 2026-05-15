@@ -1,8 +1,8 @@
 "use server"
 
-import { db } from "@/lib/db"
+import { db, executeQuery } from "@/lib/db"
 import { bookmarks, shouts } from "@/lib/schema"
-import { eq, and, desc, sql } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 
@@ -74,28 +74,29 @@ export async function getBookmarkedShouts(limit = 20, offset = 0) {
       return []
     }
 
-    const result = await db
-      .select({
-        id: shouts.id,
-        content: shouts.content,
-        created_at: shouts.created_at,
-        image_url: shouts.image_url,
-        user_id: shouts.user_id,
-        username: sql<string>`users.username`,
-        display_name: sql<string>`users.display_name`,
-        avatar_url: sql<string>`users.avatar_url`,
-        bookmarked_at: bookmarks.created_at,
-        likes_count: sql<number>`(SELECT COUNT(*) FROM likes WHERE shout_id = ${shouts.id})`,
-        comments_count: sql<number>`(SELECT COUNT(*) FROM comments WHERE shout_id = ${shouts.id})`,
-        reshouts_count: sql<number>`(SELECT COUNT(*) FROM reshouts WHERE shout_id = ${shouts.id})`,
-      })
-      .from(bookmarks)
-      .innerJoin(shouts, eq(bookmarks.shout_id, shouts.id))
-      .innerJoin("users", eq(shouts.user_id, sql`users.id`))
-      .where(eq(bookmarks.user_id, currentUser.id))
-      .orderBy(desc(bookmarks.created_at))
-      .limit(limit)
-      .offset(offset)
+    const result = await executeQuery(
+      `
+      SELECT
+        s.id,
+        s.content,
+        s.created_at,
+        s.image_url,
+        s.user_id,
+        s.like_count AS vote_count,
+        u.username,
+        u.avatar_url,
+        b.created_at AS bookmarked_at,
+        (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) AS comments_count,
+        (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) AS reshouts_count
+      FROM bookmarks b
+      INNER JOIN shouts s ON b.shout_id = s.id
+      INNER JOIN users u ON s.user_id = u.id
+      WHERE b.user_id = $1
+      ORDER BY b.created_at DESC
+      LIMIT $2 OFFSET $3
+    `,
+      [currentUser.id, limit, offset],
+    )
 
     return result
   } catch (error) {

@@ -3,14 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Hash } from "lucide-react"
 
 interface TrendingHashtagsProps {
-  hashtags: {
+  hashtags?: {
     id: number
     name: string
     usage_count: number
   }[]
 }
 
-export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
+export function TrendingHashtags({ hashtags = [] }: TrendingHashtagsProps) {
   if (hashtags.length === 0) {
     return null
   }

@@ -22,7 +22,6 @@ interface ShoutCardProps {
     image_url?: string
     user_id: number
     username: string
-    display_name: string
     avatar_url?: string
     vote_count: number
     comments_count: number
@@ -230,14 +229,14 @@ export function ShoutCard({
       <CardHeader className="p-4 pb-0 flex flex-row gap-3">
         <Link href={`/profile/${shout.username}`}>
           <Avatar className="h-10 w-10">
-            <AvatarImage src={shout.avatar_url || "/placeholder.svg?height=40&width=40"} alt={shout.display_name} />
-            <AvatarFallback>{shout.display_name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={shout.avatar_url || "/placeholder.svg?height=40&width=40"} alt={shout.username} />
+            <AvatarFallback>{shout.username.charAt(0)}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
             <Link href={`/profile/${shout.username}`} className="font-semibold hover:underline">
-              {shout.display_name}
+              {shout.username}
             </Link>
             <Link href={`/profile/${shout.username}`} className="text-muted-foreground text-sm hover:underline">
               @{shout.username}

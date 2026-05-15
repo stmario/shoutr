@@ -14,7 +14,6 @@ export interface Message {
   created_at: string
   updated_at: string
   sender_username?: string
-  sender_display_name?: string
   sender_avatar_url?: string | null
 }
 
@@ -25,7 +24,6 @@ export interface Conversation {
   participants: {
     id: number
     username: string
-    display_name: string
     avatar_url: string | null
   }[]
   last_message?: {
@@ -83,7 +81,7 @@ export async function getConversations() {
     for (const conversation of result) {
       const participants = await executeQuery(
         `
-        SELECT u.id, u.username, u.display_name, u.avatar_url
+        SELECT u.id, u.username, u.avatar_url
         FROM users u
         JOIN conversation_participants cp ON u.id = cp.user_id
         WHERE cp.conversation_id = $1 AND u.id != $2
@@ -144,7 +142,7 @@ export async function getConversation(conversationId: number) {
     // Get participants
     const participants = await executeQuery(
       `
-      SELECT u.id, u.username, u.display_name, u.avatar_url
+      SELECT u.id, u.username, u.avatar_url
       FROM users u
       JOIN conversation_participants cp ON u.id = cp.user_id
       WHERE cp.conversation_id = $1
@@ -194,7 +192,6 @@ export async function getMessages(conversationId: number) {
         m.created_at, 
         m.updated_at,
         u.username as sender_username,
-        u.display_name as sender_display_name,
         u.avatar_url as sender_avatar_url
       FROM messages m
       JOIN users u ON m.sender_id = u.id

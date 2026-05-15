@@ -11,15 +11,15 @@ export const db = drizzle(sql, { schema })
 // Helper function to execute raw SQL queries
 export async function executeQuery(queryText: string, params: any[] = []) {
   try {
-    // For parameterized queries, we need to use a different approach with neon
-    // First, replace $1, $2, etc. with ? for the neon client
-    const preparedQuery = queryText
-
-    // Execute the query with parameters
-    const result = await sql.query(preparedQuery, params)
-
-    // Return the rows
-    return result.rows || []
+    const result = await sql.query(queryText, params)
+    // Neon HTTP driver: `query()` resolves to an array of row objects (not pg's { rows }).
+    if (Array.isArray(result)) {
+      return result
+    }
+    if (result && typeof result === "object" && Array.isArray((result as { rows?: unknown[] }).rows)) {
+      return (result as { rows: unknown[] }).rows
+    }
+    return []
   } catch (error) {
     console.error("Database query error:", error)
     throw error

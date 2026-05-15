@@ -18,7 +18,6 @@ interface ProfileSettingsProps {
   user: {
     id: number
     username: string
-    display_name: string
     bio: string | null
     avatar_url: string | null
     location?: string | null
@@ -28,7 +27,6 @@ interface ProfileSettingsProps {
 
 export function ProfileSettings({ user }: ProfileSettingsProps) {
   const [formData, setFormData] = useState({
-    display_name: user.display_name || "",
     bio: user.bio || "",
     location: user.location || "",
     website: user.website || "",
@@ -108,9 +106,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 <Avatar className="h-24 w-24">
                   <AvatarImage
                     src={formData.avatar_url || "/placeholder.svg?height=96&width=96"}
-                    alt={user.display_name}
+                    alt={user.username}
                   />
-                  <AvatarFallback className="text-2xl">{user.display_name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="text-2xl">{user.username.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="relative">
                   <Button
@@ -134,17 +132,6 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
               </div>
 
               <div className="flex-1 space-y-4 w-full">
-                <div className="space-y-2">
-                  <Label htmlFor="display_name">Display Name</Label>
-                  <Input
-                    id="display_name"
-                    name="display_name"
-                    value={formData.display_name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea

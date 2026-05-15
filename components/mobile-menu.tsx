@@ -82,10 +82,10 @@ export function MobileMenu({ user, unreadNotificationCount, unreadMessageCount }
                     src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
                     alt={`@${user.username}`}
                   />
-                  <AvatarFallback>{user.display_name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium">{user.display_name}</div>
+                  <div className="font-medium">{user.username}</div>
                   <div className="text-sm text-muted-foreground">@{user.username}</div>
                 </div>
               </div>
@@ -102,12 +102,7 @@ export function MobileMenu({ user, unreadNotificationCount, unreadMessageCount }
             <div className="border-t p-4 space-y-2">
               <Button asChild className="w-full" variant="default">
                 <Link href="/login" onClick={() => setOpen(false)}>
-                  Sign in
-                </Link>
-              </Button>
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/register" onClick={() => setOpen(false)}>
-                  Sign up
+                  Sign in with wallet
                 </Link>
               </Button>
             </div>

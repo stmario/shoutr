@@ -63,7 +63,7 @@ export default async function SettingsPage() {
             <NotificationSettings initialSettings={notificationSettings} />
           </TabsContent>
           <TabsContent value="security">
-            <SecuritySettings />
+            <SecuritySettings username={user.username} />
           </TabsContent>
         </Tabs>
       </div>

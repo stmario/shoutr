@@ -28,8 +28,7 @@ export default async function ComposePage() {
           user={{
             id: user.id,
             username: user.username,
-            display_name: user.display_name,
-            avatar_url: user.avatar_url,
+            avatar_url: user.avatar_url ?? undefined,
           }}
         />
       </div>
