@@ -189,7 +189,7 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex justify-between items-center border-t mt-2">
+        <CardFooter className="p-4 pt-3 flex justify-between items-center border-t mt-2">
           <div className="flex gap-2">
             <div className="relative">
               <Button
