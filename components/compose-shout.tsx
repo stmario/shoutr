@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -17,10 +16,10 @@ import Image from "next/image"
 interface ComposeShoutProps {
   username: string
   avatarUrl?: string | null
+  onShoutCreated?: () => void
 }
 
-export function ComposeShout({ username, avatarUrl }: ComposeShoutProps) {
-  const router = useRouter()
+export function ComposeShout({ username, avatarUrl, onShoutCreated }: ComposeShoutProps) {
   const showName = username?.trim() || "User"
   const showHandle = username?.trim() || "user"
 
@@ -119,7 +118,7 @@ export function ComposeShout({ username, avatarUrl }: ComposeShoutProps) {
         fileInputRef.current.value = ""
       }
 
-      router.refresh()
+      onShoutCreated?.()
 
       toast({
         title: "Shout posted!",

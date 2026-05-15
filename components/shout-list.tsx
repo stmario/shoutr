@@ -1,43 +1,67 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { ShoutCard } from "@/components/shout-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { getUserShouts } from "@/app/actions/profile"
-import { getShouts } from "@/app/actions/shouts"
+import { getShouts, type Shout } from "@/app/actions/shouts"
 
 interface ShoutListProps {
-  initialShouts?: any[]
+  initialShouts?: Shout[]
   userId?: number
   profileId?: number
+  /** Increment to refetch the first page (e.g. after posting a shout). */
+  refreshKey?: number
 }
 
-export function ShoutList({ initialShouts = [], userId, profileId }: ShoutListProps) {
+function mergeUniqueShouts(existing: Shout[], incoming: Shout[]) {
+  const seen = new Set(existing.map((s) => s.id))
+  const unique = incoming.filter((s) => !seen.has(s.id))
+  return [...existing, ...unique]
+}
+
+export function ShoutList({ initialShouts = [], userId, profileId, refreshKey = 0 }: ShoutListProps) {
   const [shouts, setShouts] = useState(initialShouts)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [offset, setOffset] = useState(initialShouts.length)
+
+  const fetchPage = useCallback(
+    async (pageOffset: number, limit = 10) => {
+      if (profileId) {
+        return getUserShouts(profileId, limit, pageOffset)
+      }
+      return getShouts(limit, pageOffset)
+    },
+    [profileId],
+  )
+
+  const refreshFeed = useCallback(async () => {
+    setLoading(true)
+    try {
+      const latest = await fetchPage(0)
+      setShouts(latest)
+      setOffset(latest.length)
+      setHasMore(latest.length >= 10)
+    } catch (error) {
+      console.error("Error refreshing shouts:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchPage])
 
   const loadMoreShouts = async () => {
     if (loading || !hasMore) return
 
     setLoading(true)
     try {
-      let newShouts
-
-      if (profileId) {
-        // If profileId is provided, fetch shouts for that profile
-        newShouts = await getUserShouts(profileId, 10, offset)
-      } else {
-        // Otherwise fetch the feed shouts
-        newShouts = await getShouts(10, offset)
-      }
+      const newShouts = await fetchPage(offset)
 
       if (newShouts.length === 0) {
         setHasMore(false)
       } else {
-        setShouts((prev) => [...prev, ...newShouts])
+        setShouts((prev) => mergeUniqueShouts(prev, newShouts))
         setOffset((prev) => prev + newShouts.length)
       }
     } catch (error) {
@@ -48,10 +72,11 @@ export function ShoutList({ initialShouts = [], userId, profileId }: ShoutListPr
   }
 
   useEffect(() => {
-    if (initialShouts.length === 0) {
-      loadMoreShouts()
+    if (initialShouts.length > 0 && refreshKey === 0) {
+      return
     }
-  }, [])
+    refreshFeed()
+  }, [refreshKey, refreshFeed, initialShouts.length])
 
   if (shouts.length === 0 && !loading) {
     return (

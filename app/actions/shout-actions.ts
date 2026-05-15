@@ -71,13 +71,23 @@ export async function createShout(formData: FormData) {
     }
 
     revalidatePath("/")
+
+    const createdAt =
+      newShout.created_at instanceof Date ? newShout.created_at.toISOString() : String(newShout.created_at)
+
     return {
       success: true,
       shout: {
         id: shoutId,
         content: newShout.content,
         image_url: newShout.image_url,
-        created_at: newShout.created_at,
+        created_at: createdAt,
+        user_id: currentUser.id,
+        username: currentUser.username,
+        avatar_url: currentUser.avatar_url,
+        vote_count: 0,
+        comments_count: 0,
+        reshouts_count: 0,
       },
     }
   } catch (error) {
