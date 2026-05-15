@@ -4,7 +4,11 @@ import bcrypt from "bcryptjs"
 import { eq } from "drizzle-orm"
 import { db, executeQuery } from "./db"
 import { users } from "./schema"
-import { emailClaimForWallet } from "./wallet-email"
+
+/** Placeholder email for SIWE-only users (unique per wallet; not used for login). */
+function emailClaimForWallet(checksumAddress: string): string {
+  return `${checksumAddress.toLowerCase()}@wallet.shoutr`
+}
 
 export type SiweUserRow = {
   id: number
