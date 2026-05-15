@@ -11,7 +11,8 @@ import { toggleLikeShout, getShoutLikeStatus, getUserStakedLikePower } from "@/a
 import { addBookmark, removeBookmark, isBookmarked } from "@/app/actions/bookmark-actions"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import Image from "next/image"
+import { ShoutContent } from "@/components/shout-content"
+import { ShoutEmbeddedImage } from "@/components/shout-embedded-image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { formatLikeWeightShot, LIKE_CURRENCY } from "@/lib/like-weight"
 
@@ -218,25 +219,10 @@ export function ShoutCard({
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-2 pl-[4.5rem]">
-        <p className="whitespace-pre-wrap">
-          {shout.content.split(/(#\w+)/).map((part, index) => {
-            if (part.startsWith("#")) {
-              return (
-                <Link key={index} href={`/hashtag/${part.substring(1)}`} className="text-purple-700 hover:underline">
-                  {part}
-                </Link>
-              )
-            }
-            return part
-          })}
-        </p>
-        {shout.image_url && (
-          <div className="mt-3 rounded-lg overflow-hidden border border-border">
-            <div className="relative aspect-video max-h-96 w-full">
-              <Image src={shout.image_url || "/placeholder.svg"} alt="Shout image" fill className="object-contain" />
-            </div>
-          </div>
-        )}
+        {shout.content ? (
+          <ShoutContent content={shout.content} className="whitespace-pre-wrap" />
+        ) : null}
+        {shout.image_url ? <ShoutEmbeddedImage src={shout.image_url} /> : null}
       </CardContent>
       <CardFooter className="p-2 pl-[4.5rem] flex justify-between">
         <Tooltip>

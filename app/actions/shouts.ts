@@ -1,6 +1,7 @@
 "use server"
 
 import { db, executeQuery } from "@/lib/db"
+import { normalizeImageUrl } from "@/lib/media-url"
 import { shouts, hashtags, shoutHashtags, reshouts, comments, users } from "@/lib/schema"
 import { eq, and, desc, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
@@ -60,17 +61,31 @@ export async function createShout(content: string, imageUrl?: string) {
       return { error: "You must be logged in to create a shout" }
     }
 
+    const trimmedContent = content.trim()
+    const imageParsed =
+      imageUrl === undefined || imageUrl === null || String(imageUrl).trim() === ""
+        ? { ok: true as const, value: null }
+        : normalizeImageUrl(String(imageUrl))
+
+    if (!imageParsed.ok) {
+      return { error: imageParsed.message }
+    }
+
+    if (!trimmedContent && !imageParsed.value) {
+      return { error: "Add text or an image to your shout" }
+    }
+
     const result = await executeQuery(
       `
       INSERT INTO shouts (user_id, content, image_url)
       VALUES ($1, $2, $3)
       RETURNING id
     `,
-      [currentUser.id, content, imageUrl || null],
+      [currentUser.id, trimmedContent || "", imageParsed.value],
     )
 
     // Extract hashtags from content
-    const hashtags = content.match(/#(\w+)/g) || []
+    const hashtags = trimmedContent.match(/#(\w+)/g) || []
 
     if (hashtags.length > 0 && result[0]?.id) {
       const shoutId = result[0].id

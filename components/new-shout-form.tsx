@@ -2,17 +2,16 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { ImageIcon, Smile, MapPin, Calendar, X, Loader2 } from "lucide-react"
+import { ImageIcon, Smile, MapPin, Calendar, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
-import { uploadImage } from "@/app/actions/upload-actions"
 import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
+import { ShoutImageAttachmentPanel, useShoutImageAttachment } from "@/components/shout-image-attachment"
 
 interface NewShoutFormProps {
   user: {
@@ -25,12 +24,8 @@ interface NewShoutFormProps {
 export function NewShoutForm({ user }: NewShoutFormProps) {
   const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [characterCount, setCharacterCount] = useState(0)
-  const formRef = useRef<HTMLFormElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const attachment = useShoutImageAttachment()
   const { toast } = useToast()
   const router = useRouter()
 
@@ -40,85 +35,27 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
     setCharacterCount(newContent.length)
   }
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const canPost = (content.trim().length > 0 || attachment.hasImage) && characterCount <= 280
 
-    // Create a preview
-    const objectUrl = URL.createObjectURL(file)
-    setImagePreview(objectUrl)
-    setIsUploading(true)
-
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-
-      const result = await uploadImage(formData)
-
-      if (result.success) {
-        setImageUrl(result.url)
-        toast({
-          title: "Image uploaded",
-          description: "Your image has been uploaded successfully.",
-        })
-      } else {
-        setImagePreview(null)
-        toast({
-          title: "Upload failed",
-          description: result.message || "Failed to upload image. Please try again.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error)
-      setImagePreview(null)
-      toast({
-        title: "Upload error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const removeImage = () => {
-    setImageUrl(null)
-    setImagePreview(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-  }
-
-  const handleSubmit = async (formData: FormData) => {
-    if (content.trim().length === 0) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!canPost) return
 
     try {
       setIsSubmitting(true)
-
-      // Add the content and image URL to the form data
-      formData.append("content", content)
-      if (imageUrl) {
-        formData.append("imageUrl", imageUrl)
+      const formData = new FormData()
+      formData.append("content", content.trim())
+      if (attachment.imageUrl) {
+        formData.append("imageUrl", attachment.imageUrl)
       }
 
       const result = await createShout(formData)
 
       if (result.success) {
         setContent("")
-        setImageUrl(null)
-        setImagePreview(null)
+        attachment.resetAttachment()
         setCharacterCount(0)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""
-        }
-
-        toast({
-          title: "Shout posted!",
-          description: "Your shout has been posted successfully.",
-        })
-
-        // Refresh the page to show the new shout
+        toast({ title: "Shout posted!", description: "Your shout has been posted successfully." })
         router.refresh()
       } else {
         toast({
@@ -139,9 +76,11 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
     }
   }
 
+  const busy = isSubmitting
+
   return (
     <Card className="border-b border-x-0 rounded-none md:border md:rounded-lg mb-4">
-      <form ref={formRef} action={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <CardContent className="p-4">
           <div className="flex gap-3">
             <Avatar className="h-10 w-10">
@@ -155,69 +94,32 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
                 className="border-0 focus-visible:ring-0 resize-none text-lg min-h-[100px]"
                 value={content}
                 onChange={handleContentChange}
-                disabled={isSubmitting}
+                disabled={busy}
               />
-
-              {imagePreview && (
-                <div className="relative mt-2 rounded-lg overflow-hidden border border-border">
-                  <div className="relative aspect-video max-h-80 w-full">
-                    <Image
-                      src={imagePreview || "/placeholder.svg"}
-                      alt="Upload preview"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  {isUploading ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                      <Loader2 className="h-8 w-8 animate-spin text-white" />
-                    </div>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="icon"
-                      className="absolute top-2 right-2 rounded-full bg-black/50 hover:bg-black/70 text-white"
-                      onClick={removeImage}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <input type="hidden" name="imageUrl" value={imageUrl || ""} />
-                </div>
-              )}
+              <ShoutImageAttachmentPanel attachment={attachment} disabled={busy} />
             </div>
           </div>
         </CardContent>
         <CardFooter className="p-4 pt-3 flex justify-between items-center border-t mt-2">
           <div className="flex gap-2">
-            <div className="relative">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-purple-700 rounded-full h-8 w-8"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSubmitting || isUploading}
-              >
-                <ImageIcon className="h-5 w-5" />
-              </Button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageChange}
-                disabled={isSubmitting || isUploading}
-              />
-            </div>
-            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={`text-purple-700 rounded-full h-8 w-8 ${attachment.showPanel ? "bg-purple-100 dark:bg-purple-900/30" : ""}`}
+              onClick={() => attachment.setShowPanel((v) => !v)}
+              disabled={busy}
+              title="Add image"
+            >
+              <ImageIcon className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8" disabled={busy}>
               <Smile className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8">
+            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8" disabled={busy}>
               <MapPin className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8">
+            <Button variant="ghost" size="icon" className="text-purple-700 rounded-full h-8 w-8" disabled={busy}>
               <Calendar className="h-5 w-5" />
             </Button>
           </div>
@@ -228,7 +130,7 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
             <Button
               type="submit"
               className="bg-purple-700 hover:bg-purple-800 text-white rounded-full"
-              disabled={content.trim().length === 0 || characterCount > 280 || isSubmitting || isUploading}
+              disabled={!canPost || isSubmitting}
             >
               {isSubmitting ? (
                 <>

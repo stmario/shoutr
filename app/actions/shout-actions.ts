@@ -5,6 +5,7 @@ import { shouts, hashtags, shoutHashtags, likes, reshouts, comments, users } fro
 import { eq, and, desc, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
+import { normalizeImageUrl } from "@/lib/media-url"
 import { createNotification } from "./notification-actions"
 
 export async function createShout(formData: FormData) {
@@ -15,14 +16,23 @@ export async function createShout(formData: FormData) {
       return { success: false, message: "You must be logged in to create a shout" }
     }
 
-    const content = formData.get("content") as string
-    const imageUrl = (formData.get("imageUrl") as string) || null
+    const content = (formData.get("content") as string) ?? ""
+    const imageRaw = formData.get("imageUrl")
+    const imageParsed =
+      imageRaw === null || String(imageRaw).trim() === ""
+        ? { ok: true as const, value: null }
+        : normalizeImageUrl(String(imageRaw))
 
-    if (!content || content.trim().length === 0) {
-      return { success: false, message: "Shout content cannot be empty" }
+    if (!imageParsed.ok) {
+      return { success: false, message: imageParsed.message }
     }
 
-    if (content.length > 280) {
+    const trimmedContent = content.trim()
+    if (!trimmedContent && !imageParsed.value) {
+      return { success: false, message: "Add text or an image to your shout" }
+    }
+
+    if (trimmedContent.length > 280) {
       return { success: false, message: "Shout content cannot exceed 280 characters" }
     }
 
@@ -31,8 +41,8 @@ export async function createShout(formData: FormData) {
       .insert(shouts)
       .values({
         user_id: currentUser.id,
-        content: content,
-        image_url: imageUrl,
+        content: trimmedContent || "",
+        image_url: imageParsed.value,
         vote_count: "0",
       })
       .returning()
@@ -40,7 +50,7 @@ export async function createShout(formData: FormData) {
     const shoutId = newShout.id
 
     // Extract hashtags from content
-    const hashtagMatches = content.match(/#(\w+)/g) || []
+    const hashtagMatches = trimmedContent.match(/#(\w+)/g) || []
 
     // Insert hashtags and create relationships
     if (hashtagMatches.length > 0) {
