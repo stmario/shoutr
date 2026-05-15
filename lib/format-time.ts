@@ -31,6 +31,13 @@ export function serializeTimestamp(value: unknown): string {
   return String(value)
 }
 
+/** Fixed calendar/clock label — safe for SSR and hydration (no "now"). */
+export function formatAbsoluteTimestamp(value: string | Date): string {
+  const date = value instanceof Date ? value : parseDbDate(value)
+  if (Number.isNaN(date.getTime())) return ""
+  return format(date, "MMM d, yyyy, h:mm a")
+}
+
 /** Chat-friendly time: clock time today, no vague "about X hours ago". */
 export function formatChatTimestamp(value: string | Date): string {
   const date = value instanceof Date ? value : parseDbDate(value)

@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Message } from "@/app/actions/message-actions"
-import { formatChatTimestamp } from "@/lib/format-time"
+import { ClientTime } from "@/components/client-time"
 
 interface MessageItemProps {
   message: Message
@@ -10,8 +10,6 @@ interface MessageItemProps {
 }
 
 export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
-  const formattedDate = formatChatTimestamp(message.created_at)
-
   if (isCurrentUser) {
     return (
       <div className="flex flex-col items-end mb-4">
@@ -27,7 +25,7 @@ export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
             <AvatarFallback>{message.sender_username?.charAt(0) || "?"}</AvatarFallback>
           </Avatar>
         </div>
-        <span className="text-xs text-muted-foreground mt-1 mr-10">{formattedDate}</span>
+        <ClientTime value={message.created_at} className="text-xs text-muted-foreground mt-1 mr-10" />
       </div>
     )
   }
@@ -46,7 +44,7 @@ export function MessageItem({ message, isCurrentUser }: MessageItemProps) {
           <p>{message.content}</p>
         </div>
       </div>
-      <span className="text-xs text-muted-foreground mt-1 ml-10">{formattedDate}</span>
+      <ClientTime value={message.created_at} className="text-xs text-muted-foreground mt-1 ml-10" />
     </div>
   )
 }

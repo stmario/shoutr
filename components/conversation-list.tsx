@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { formatChatTimestamp } from "@/lib/format-time"
+import { ClientTime } from "@/components/client-time"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getConversations } from "@/app/actions/message-actions"
@@ -66,7 +66,6 @@ export function ConversationList() {
 
         const lastMessage = conversation.last_message
         const unreadCount = Number(conversation.unread_count ?? 0)
-        const formattedDate = lastMessage ? formatChatTimestamp(lastMessage.created_at) : ""
 
         return (
           <Link key={conversation.id} href={`/messages/${conversation.id}`}>
@@ -86,7 +85,10 @@ export function ConversationList() {
                 <div className="flex justify-between items-center mb-1">
                   <h3 className="font-semibold truncate">{otherParticipant.username}</h3>
                   {lastMessage && (
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">{formattedDate}</span>
+                    <ClientTime
+                      value={lastMessage.created_at}
+                      className="text-xs text-muted-foreground whitespace-nowrap"
+                    />
                   )}
                 </div>
                 {lastMessage ? (

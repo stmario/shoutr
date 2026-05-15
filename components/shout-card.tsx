@@ -5,7 +5,7 @@ import { Heart, MessageCircle, Repeat2, Bookmark } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { formatDistanceToNow } from "date-fns"
+import { ClientTime } from "@/components/client-time"
 import { reshout } from "@/app/actions/shouts"
 import { toggleLikeShout, getShoutLikeStatus, getUserStakedLikePower } from "@/app/actions/vote-actions"
 import { addBookmark, removeBookmark, isBookmarked } from "@/app/actions/bookmark-actions"
@@ -81,7 +81,6 @@ export function ShoutCard({
     void checkStatus()
   }, [shout.id, currentUserId, initialIsBookmarked])
 
-  const formattedDate = formatDistanceToNow(new Date(shout.created_at), { addSuffix: true })
   const likeDisplay = formatLikeWeightShot(likeTotalWei)
 
   const handleLike = async () => {
@@ -218,7 +217,7 @@ export function ShoutCard({
               </Link>
             )}
             <span className="text-muted-foreground text-sm">·</span>
-            <span className="text-muted-foreground text-sm">{formattedDate}</span>
+            <ClientTime value={shout.created_at} className="text-muted-foreground text-sm" />
           </div>
         </div>
       </CardHeader>
@@ -266,9 +265,12 @@ export function ShoutCard({
           variant="ghost"
           size="sm"
           className="text-muted-foreground hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950"
+          asChild
         >
-          <MessageCircle className="mr-1 h-4 w-4" />
-          <span className="text-xs">{commentCount}</span>
+          <Link href={`/shout/${shout.id}`}>
+            <MessageCircle className="mr-1 h-4 w-4" />
+            <span className="text-xs">{commentCount}</span>
+          </Link>
         </Button>
         <Button
           variant="ghost"

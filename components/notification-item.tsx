@@ -1,6 +1,6 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
+import { ClientTime } from "@/components/client-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail } from "lucide-react"
 import Link from "next/link"
@@ -22,8 +22,6 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
-  const formattedDate = formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })
-
   const renderIcon = () => {
     switch (notification.type) {
       case "like":
@@ -127,7 +125,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           {renderIcon()}
           <div className="text-sm">{renderContent()}</div>
         </div>
-        <span className="text-xs text-muted-foreground mt-1">{formattedDate}</span>
+        <ClientTime value={notification.created_at} className="text-xs text-muted-foreground mt-1" />
       </div>
       {!notification.is_read && (
         <span

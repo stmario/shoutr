@@ -12,7 +12,7 @@ import { Search, User, Hash, MessageSquare, Loader2 } from "lucide-react"
 import { search } from "@/app/actions/explore-actions"
 import type { SearchResult } from "@/app/actions/explore-actions"
 import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
+import { ClientTime } from "@/components/client-time"
 
 interface SearchBarProps {
   initialQuery?: string
@@ -144,8 +144,6 @@ export function SearchBar({ initialQuery = "" }: SearchBarProps) {
 }
 
 function SearchResultItem({ result, onClick }: { result: SearchResult; onClick: () => void }) {
-  const formattedDate = formatDistanceToNow(new Date(result.created_at), { addSuffix: true })
-
   if (result.type === "user") {
     return (
       <Link href={`/profile/${result.username}`} onClick={onClick}>
@@ -175,7 +173,8 @@ function SearchResultItem({ result, onClick }: { result: SearchResult; onClick: 
           <div className="flex-1 min-w-0">
             <div className="text-sm">
               <span className="font-semibold">@{result.username}</span>
-              <span className="text-muted-foreground"> · {formattedDate}</span>
+              <span className="text-muted-foreground"> · </span>
+              <ClientTime value={result.created_at} className="text-muted-foreground inline" />
             </div>
             <div className="text-sm truncate">{result.content}</div>
           </div>
