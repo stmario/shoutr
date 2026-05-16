@@ -1,7 +1,7 @@
 "use server"
 
 import { db, executeQuery } from "@/lib/db"
-import { notifications, shouts, comments, users } from "@/lib/schema"
+import { notifications, shouts, comments, users, shoutDeletions } from "@/lib/schema"
 import { eq, desc, and, sql, count } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { revalidatePath } from "next/cache"
@@ -21,6 +21,8 @@ export type Notification = {
   shout_content?: string
   comment_id?: number
   comment_content?: string
+  shout_deletion_id?: number
+  deletion_reason?: string
 }
 
 export type NotificationCount = {
@@ -48,18 +50,23 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
         shout_content: shouts.content,
         comment_id: notifications.comment_id,
         comment_content: comments.content,
+        shout_deletion_id: notifications.shout_deletion_id,
+        deletion_reason: shoutDeletions.reason,
+        deleted_shout_content: shoutDeletions.content,
       })
       .from(notifications)
       .innerJoin(actorUser, eq(notifications.actor_id, actorUser.id))
       .leftJoin(shouts, eq(notifications.shout_id, shouts.id))
       .leftJoin(comments, eq(notifications.comment_id, comments.id))
+      .leftJoin(shoutDeletions, eq(notifications.shout_deletion_id, shoutDeletions.id))
       .where(eq(notifications.user_id, currentUser.id))
       .orderBy(desc(notifications.created_at))
       .limit(limit)
       .offset(offset)
 
-    return (result as Notification[]).map((row) => ({
+    return (result as (Notification & { deleted_shout_content?: string })[]).map((row) => ({
       ...row,
+      shout_content: row.shout_content ?? row.deleted_shout_content ?? undefined,
       is_read: row.is_read === true || row.is_read === "t" || row.is_read === "true",
     }))
   } catch (error) {
@@ -155,6 +162,7 @@ export async function createNotification({
   type,
   shoutId,
   commentId,
+  shoutDeletionId,
   vote_type: _voteType,
 }: {
   userId: number
@@ -162,6 +170,7 @@ export async function createNotification({
   type: string
   shoutId?: number
   commentId?: number
+  shoutDeletionId?: number
   vote_type?: number
 }) {
   try {
@@ -181,6 +190,7 @@ export async function createNotification({
           eq(notifications.type, type),
           shoutId ? eq(notifications.shout_id, shoutId) : sql`1=1`,
           commentId ? eq(notifications.comment_id, commentId) : sql`1=1`,
+          shoutDeletionId ? eq(notifications.shout_deletion_id, shoutDeletionId) : sql`1=1`,
         ),
       )
       .limit(1)
@@ -207,10 +217,12 @@ export async function createNotification({
         type,
         shout_id: shoutId,
         comment_id: commentId,
+        shout_deletion_id: shoutDeletionId,
         is_read: false,
       })
       .returning()
 
+    revalidateNotificationSurfaces()
     return notification
   } catch (error) {
     console.error("Error creating notification:", error)

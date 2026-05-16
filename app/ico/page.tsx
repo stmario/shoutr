@@ -194,9 +194,9 @@ export default function ICOPage() {
             <Link href="/staking" className="text-primary underline underline-offset-2">
               stake it on the staking page
             </Link>
-            . Your currently staked balance is your like weight: when you like a shout, that amount is added to the
-            shout&apos;s total. More staked SHOT means a stronger like. If you unstake or your stake drops, your like
-            power updates the next time you interact (and existing shout totals are recalculated from current stakes).
+            . When you like, your current staked balance is read from the staking contract and stored on that like;
+            the shout total goes up by that amount. If you unlike, that stored amount is removed — even if you
+            unstaked in between.
           </p>
         </CardContent>
       </Card>

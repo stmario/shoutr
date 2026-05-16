@@ -39,7 +39,6 @@ export async function getCurrentUser() {
             bio: users.bio,
             avatar_url: users.avatar_url,
             wallet_address: users.wallet_address,
-            weight: users.weight,
           })
           .from(users)
           .where(eq(users.id, payload.id))
@@ -90,7 +89,6 @@ export async function getCurrentUser() {
         bio: "This is a fallback user due to rate limiting",
         avatar_url: null,
         wallet_address: null,
-        weight: "0",
       }
     }
 

@@ -25,7 +25,7 @@ export function InfiniteScrollShoutList({
     [hashtagName],
   )
 
-  const { data, isLoading, hasMore, error, loadMoreRef } = useInfiniteScroll<any>({
+  const { data, isLoading, hasMore, error, loadMoreRef, setData } = useInfiniteScroll<any>({
     initialData: initialShouts,
     fetchMore,
     hasMoreInitial: initialShouts.length >= PAGE_SIZE,
@@ -42,7 +42,12 @@ export function InfiniteScrollShoutList({
   return (
     <div className="space-y-4">
       {data.map((shout) => (
-        <ShoutCard key={shout.id} shout={shout} currentUserId={userId} />
+        <ShoutCard
+          key={shout.id}
+          shout={shout}
+          currentUserId={userId}
+          onDeleted={() => setData((prev) => prev.filter((s) => s.id !== shout.id))}
+        />
       ))}
 
       <div ref={loadMoreRef} className="py-4 flex justify-center">

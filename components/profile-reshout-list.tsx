@@ -112,6 +112,7 @@ export function ProfileReshoutList({
           }}
           currentUserId={currentUserId}
           reshoutedBy={{ ...reshoutedBy, created_at: row.reshouted_at }}
+          onDeleted={() => setRows((prev) => prev.filter((r) => r.id !== row.id))}
         />
       ))}
       {hasMore && (

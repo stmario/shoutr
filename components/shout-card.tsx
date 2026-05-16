@@ -1,10 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, MessageCircle, Repeat2, Bookmark, Repeat } from "lucide-react"
+import { Heart, MessageCircle, Repeat2, Bookmark, Repeat, MoreHorizontal, Trash2 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { DeleteShoutDialog } from "@/components/delete-shout-dialog"
+import { getShoutModerationDeleteEligibility } from "@/app/actions/shout-delete-actions"
 import { ClientTime } from "@/components/client-time"
 import { toggleReshout, getShoutReshoutStatus } from "@/app/actions/reshout-actions"
 import type { ReshoutedBy } from "@/app/actions/shouts"
@@ -37,6 +45,7 @@ interface ShoutCardProps {
   isBookmarked?: boolean
   reshoutedBy?: ReshoutedBy
   onBookmarkChange?: (bookmarked: boolean) => void
+  onDeleted?: () => void
 }
 
 export function ShoutCard({
@@ -47,6 +56,7 @@ export function ShoutCard({
   isBookmarked: initialIsBookmarked = false,
   reshoutedBy,
   onBookmarkChange,
+  onDeleted,
 }: ShoutCardProps) {
   const initialTotal = shout.vote_count?.toString() ?? "0"
   const [likeTotalWei, setLikeTotalWei] = useState(initialTotal)
@@ -60,6 +70,8 @@ export function ShoutCard({
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
   const [isLikeLoading, setIsLikeLoading] = useState(false)
   const [isReshoutLoading, setIsReshoutLoading] = useState(false)
+  const [canModerateDelete, setCanModerateDelete] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -84,6 +96,9 @@ export function ShoutCard({
       const reshoutStatus = await getShoutReshoutStatus(shout.id)
       setReshouted(reshoutStatus.reshouted)
       setReshoutCount(reshoutStatus.count)
+
+      const deleteEligibility = await getShoutModerationDeleteEligibility(shout.id)
+      setCanModerateDelete(deleteEligibility.canDelete)
     }
 
     void checkStatus()
@@ -233,14 +248,14 @@ export function ShoutCard({
           <ClientTime value={reshoutedBy.created_at} />
         </div>
       )}
-      <CardHeader className={`p-4 pb-0 flex flex-row gap-3 ${reshoutedBy ? "pt-2" : ""}`}>
+      <CardHeader className={`p-4 pb-0 flex flex-row gap-3 items-start ${reshoutedBy ? "pt-2" : ""}`}>
         <Link href={`/profile/${shout.username}`}>
           <Avatar className="h-10 w-10">
             <AvatarImage src={shout.avatar_url || "/placeholder.svg?height=40&width=40"} alt={shout.username} />
             <AvatarFallback>{shout.username.charAt(0)}</AvatarFallback>
           </Avatar>
         </Link>
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-1 min-w-0">
           <div className="flex items-center gap-1">
             {shout.wallet_address ? (
               <Tooltip>
@@ -262,6 +277,34 @@ export function ShoutCard({
             <ClientTime value={shout.created_at} className="text-muted-foreground text-sm" />
           </div>
         </div>
+        {canModerateDelete && (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Shout actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete shout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DeleteShoutDialog
+              shoutId={shout.id}
+              authorUsername={shout.username}
+              open={deleteDialogOpen}
+              onOpenChange={setDeleteDialogOpen}
+              onDeleted={onDeleted}
+            />
+          </>
+        )}
       </CardHeader>
       <CardContent className="p-4 pt-2 pl-[4.5rem]">
         {shout.content ? (

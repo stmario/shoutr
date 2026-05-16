@@ -299,16 +299,24 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
 /** @deprecated Prefer toggleLikeShout from vote-actions (stake-weighted). */
 export async function likeShout(userId: number, shoutId: number) {
   try {
-    await db
+    const { getUserStakedWei } = await import("@/lib/staked-shot")
+    const { incrementShoutLikeTotal } = await import("@/lib/like-totals")
+    const weightWei = (await getUserStakedWei(userId)).toString()
+    if (weightWei === "0") return false
+
+    const inserted = await db
       .insert(likes)
       .values({
         user_id: userId,
         shout_id: shoutId,
+        weight_wei: weightWei,
       })
       .onConflictDoNothing()
+      .returning({ user_id: likes.user_id })
 
-    const { recalculateShoutLikeTotal } = await import("@/lib/user-weight")
-    await recalculateShoutLikeTotal(shoutId)
+    if (inserted.length > 0) {
+      await incrementShoutLikeTotal(shoutId, weightWei)
+    }
 
     const shoutResult = await db.select({ user_id: shouts.user_id }).from(shouts).where(eq(shouts.id, shoutId))
 
@@ -333,15 +341,16 @@ export async function likeShout(userId: number, shoutId: number) {
 export async function unlikeShout(userId: number, shoutId: number) {
   try {
     const currentLike = await db
-      .select({ user_id: likes.user_id })
+      .select({ weight_wei: likes.weight_wei })
       .from(likes)
       .where(and(eq(likes.user_id, userId), eq(likes.shout_id, shoutId)))
       .limit(1)
 
     if (currentLike.length > 0) {
+      const storedWeightWei = currentLike[0].weight_wei?.toString() ?? "0"
       await db.delete(likes).where(and(eq(likes.user_id, userId), eq(likes.shout_id, shoutId)))
-      const { recalculateShoutLikeTotal } = await import("@/lib/user-weight")
-      await recalculateShoutLikeTotal(shoutId)
+      const { decrementShoutLikeTotal } = await import("@/lib/like-totals")
+      await decrementShoutLikeTotal(shoutId, storedWeightWei)
     }
 
     revalidatePath("/")

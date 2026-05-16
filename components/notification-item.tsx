@@ -2,7 +2,7 @@
 
 import { ClientTime } from "@/components/client-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail } from "lucide-react"
+import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 
 interface NotificationItemProps {
@@ -18,6 +18,7 @@ interface NotificationItemProps {
     shout_content?: string
     comment_id?: number
     comment_content?: string
+    deletion_reason?: string
   }
 }
 
@@ -36,6 +37,8 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         return <Repeat2 className="h-4 w-4 text-green-500" />
       case "message":
         return <Mail className="h-4 w-4 text-purple-500" />
+      case "shout_deleted":
+        return <ShieldAlert className="h-4 w-4 text-amber-500" />
       default:
         return null
     }
@@ -88,6 +91,21 @@ export function NotificationItem({ notification }: NotificationItemProps) {
             <span className="text-muted-foreground"> sent you a message</span>
           </>
         )
+      case "shout_deleted":
+        return (
+          <div className="flex flex-col gap-1">
+            <div>
+              <span className="font-semibold">{notification.actor_username}</span>
+              <span className="text-muted-foreground"> removed your shout</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Shout was deleted due to: {notification.deletion_reason?.trim() || "(no reason provided)"}
+            </p>
+            {notification.shout_content && (
+              <p className="text-sm text-muted-foreground line-clamp-1">&ldquo;{notification.shout_content}&rdquo;</p>
+            )}
+          </div>
+        )
       default:
         return null
     }
@@ -99,6 +117,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     }
     if (notification.type === "message") {
       return `/messages/with/${notification.actor_username}`
+    }
+    if (notification.type === "shout_deleted") {
+      return `/profile/${notification.actor_username}`
     }
     if (notification.shout_id) {
       return `/shout/${notification.shout_id}`

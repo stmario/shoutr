@@ -53,6 +53,7 @@ export function BookmarkedShoutList({ initialShouts, userId }: BookmarkedShoutLi
           currentUserId={userId}
           isBookmarked
           onBookmarkChange={(bookmarked) => handleBookmarkChange(shout.id, bookmarked)}
+          onDeleted={() => setRemovedIds((prev) => new Set(prev).add(shout.id))}
         />
       ))}
 

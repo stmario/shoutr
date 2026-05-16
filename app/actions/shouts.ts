@@ -502,28 +502,24 @@ export async function getUserShouts(userId: number, limit = 20, offset = 0) {
 
 export async function likeShout(userId: number, shoutId: number) {
   try {
-    await executeQuery(
+    const { getUserStakedWei } = await import("@/lib/staked-shot")
+    const { incrementShoutLikeTotal } = await import("@/lib/like-totals")
+    const weightWei = (await getUserStakedWei(userId)).toString()
+    if (weightWei === "0") return false
+
+    const inserted = await executeQuery(
       `
-      INSERT INTO likes (user_id, shout_id)
-      VALUES ($1, $2)
+      INSERT INTO likes (user_id, shout_id, weight_wei)
+      VALUES ($1, $2, $3::numeric)
       ON CONFLICT (user_id, shout_id) DO NOTHING
+      RETURNING user_id
     `,
-      [userId, shoutId],
+      [userId, shoutId, weightWei],
     )
 
-    await executeQuery(
-      `
-      UPDATE shouts s
-      SET like_count = (
-        SELECT COALESCE(SUM(u.weight::numeric), 0)
-        FROM likes l
-        INNER JOIN users u ON l.user_id = u.id
-        WHERE l.shout_id = s.id
-      )
-      WHERE s.id = $2
-    `,
-      [userId, shoutId],
-    )
+    if (inserted.length > 0) {
+      await incrementShoutLikeTotal(shoutId, weightWei)
+    }
 
     return true
   } catch (error) {
@@ -535,15 +531,16 @@ export async function likeShout(userId: number, shoutId: number) {
 export async function unlikeShout(userId: number, shoutId: number) {
   try {
     // Get current vote type
-    const voteResult = await executeQuery(
+    const voteResult = await executeQuery<{ weight_wei: string }>(
       `
-      SELECT 1 FROM likes
+      SELECT weight_wei::text AS weight_wei FROM likes
       WHERE user_id = $1 AND shout_id = $2
     `,
       [userId, shoutId],
     )
 
     if (voteResult.length > 0) {
+      const storedWeightWei = voteResult[0].weight_wei ?? "0"
       await executeQuery(
         `
         DELETE FROM likes
@@ -552,19 +549,8 @@ export async function unlikeShout(userId: number, shoutId: number) {
         [userId, shoutId],
       )
 
-      await executeQuery(
-        `
-        UPDATE shouts s
-        SET like_count = (
-          SELECT COALESCE(SUM(u.weight::numeric), 0)
-          FROM likes l
-          INNER JOIN users u ON l.user_id = u.id
-          WHERE l.shout_id = s.id
-        )
-        WHERE s.id = $2
-      `,
-        [userId, shoutId],
-      )
+      const { decrementShoutLikeTotal } = await import("@/lib/like-totals")
+      await decrementShoutLikeTotal(shoutId, storedWeightWei)
     }
 
     return true

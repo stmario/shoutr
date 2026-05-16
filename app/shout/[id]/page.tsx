@@ -1,5 +1,5 @@
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { ShoutCard } from "@/components/shout-card"
+import { ShoutDetailCard } from "@/components/shout-detail-card"
 import { ShoutComments } from "@/components/shout-comments"
 import { getCurrentUser } from "@/lib/auth"
 import { getCommentsForShout } from "@/app/actions/comment-actions"
@@ -48,7 +48,7 @@ export default async function ShoutPage({ params }: ShoutPageProps) {
         </div>
       </header>
       <div className="container max-w-2xl mx-auto px-4 py-4">
-        <ShoutCard shout={shoutForCard} currentUserId={user?.id} />
+        <ShoutDetailCard shout={shoutForCard} currentUserId={user?.id} />
         <ShoutComments shoutId={shoutId} initialComments={comments} currentUserId={user?.id} />
       </div>
     </SidebarInset>

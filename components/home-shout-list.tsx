@@ -127,6 +127,9 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
               shout={item.shout}
               currentUserId={userId}
               reshoutedBy={item.reshouted_by}
+              onDeleted={() =>
+                setFollowing((prev) => prev.filter((f) => f.shout.id !== item.shout.id))
+              }
             />
           ))}
         </section>
@@ -138,7 +141,12 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
             Popular from others
           </h2>
           {discover.map((shout) => (
-            <ShoutCard key={`d-${shout.id}`} shout={shout} currentUserId={userId} />
+            <ShoutCard
+              key={`d-${shout.id}`}
+              shout={shout}
+              currentUserId={userId}
+              onDeleted={() => setDiscover((prev) => prev.filter((s) => s.id !== shout.id))}
+            />
           ))}
         </section>
       )}

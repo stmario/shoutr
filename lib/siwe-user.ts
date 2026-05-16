@@ -70,7 +70,6 @@ async function insertWalletUser(username: string, walletAddress: string, avatarU
   add("wallet_address", checksum)
   add("avatar_url", avatarUrl ?? null)
   add("is_verified", true)
-  add("weight", "0")
 
   if (!fields.includes("wallet_address")) {
     throw new Error("wallet_address must be set on sign-up")

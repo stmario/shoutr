@@ -11,7 +11,6 @@ export const users = pgTable("users", {
   website: text("website"),
   avatar_url: text("avatar_url"),
   wallet_address: text("wallet_address").unique(),
-  weight: numeric("weight", { precision: 78, scale: 0 }).default("0").notNull(), // staked SHOT in wei (like power)
   is_verified: boolean("is_verified").default(false),
   verification_token: text("verification_token"),
   reset_token: text("reset_token"),
@@ -32,7 +31,7 @@ export const shouts = pgTable("shouts", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 })
 
-// Likes table (like power comes from users.weight = currently staked SHOT)
+// Likes table (weight_wei = staked SHOT at like time; shout total adds/subtracts this row)
 export const likes = pgTable(
   "likes",
   {
@@ -42,6 +41,7 @@ export const likes = pgTable(
     shout_id: integer("shout_id")
       .notNull()
       .references(() => shouts.id, { onDelete: "cascade" }),
+    weight_wei: numeric("weight_wei", { precision: 78, scale: 0 }).default("0").notNull(),
   },
   (table) => {
     return {
@@ -127,6 +127,28 @@ export const shoutHashtags = pgTable(
   },
 )
 
+// Moderation deletion audit (shout row removed; snapshot kept here)
+export const shoutDeletions = pgTable("shout_deletions", {
+  id: serial("id").primaryKey(),
+  shout_id: integer("shout_id").notNull(),
+  author_id: integer("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  deleted_by_id: integer("deleted_by_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull().default(""),
+  image_url: text("image_url"),
+  author_weight_at_deletion: numeric("author_weight_at_deletion", { precision: 78, scale: 0 })
+    .default("0")
+    .notNull(),
+  deleter_weight_at_deletion: numeric("deleter_weight_at_deletion", { precision: 78, scale: 0 })
+    .default("0")
+    .notNull(),
+  reason: text("reason").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+})
+
 // Notifications table
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
@@ -136,9 +158,12 @@ export const notifications = pgTable("notifications", {
   actor_id: integer("actor_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(), // vote, reshout, follow, comment, mention, message
+  type: text("type").notNull(), // like, reshout, follow, comment, mention, message, shout_deleted
   shout_id: integer("shout_id").references(() => shouts.id, { onDelete: "cascade" }),
   comment_id: integer("comment_id").references(() => comments.id, { onDelete: "cascade" }),
+  shout_deletion_id: integer("shout_deletion_id").references(() => shoutDeletions.id, {
+    onDelete: "set null",
+  }),
   is_read: boolean("is_read").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 })

@@ -90,7 +90,12 @@ export function ShoutList({ initialShouts = [], userId, profileId, refreshKey = 
   return (
     <div className="space-y-4">
       {shouts.map((shout) => (
-        <ShoutCard key={shout.id} shout={shout} currentUserId={userId} />
+        <ShoutCard
+          key={shout.id}
+          shout={shout}
+          currentUserId={userId}
+          onDeleted={() => setShouts((prev) => prev.filter((s) => s.id !== shout.id))}
+        />
       ))}
 
       {hasMore && (
