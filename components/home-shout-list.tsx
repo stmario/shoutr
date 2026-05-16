@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { ShoutCard } from "@/components/shout-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import { getHomeFeed, type Shout } from "@/app/actions/shouts"
+import { getHomeFeed, type FeedItem, type Shout } from "@/app/actions/shouts"
 
 interface HomeShoutListProps {
   userId: number
@@ -13,6 +13,18 @@ interface HomeShoutListProps {
 
 const PAGE_SIZE = 10
 
+function feedItemKey(item: FeedItem) {
+  return item.item_type === "reshout"
+    ? `r-${item.reshouted_by?.id}-${item.shout.id}-${item.sort_at}`
+    : `s-${item.shout.id}`
+}
+
+function mergeUniqueFeedItems(existing: FeedItem[], incoming: FeedItem[]) {
+  const seen = new Set(existing.map(feedItemKey))
+  const unique = incoming.filter((item) => !seen.has(feedItemKey(item)))
+  return [...existing, ...unique]
+}
+
 function mergeUniqueShouts(existing: Shout[], incoming: Shout[]) {
   const seen = new Set(existing.map((s) => s.id))
   const unique = incoming.filter((s) => !seen.has(s.id))
@@ -20,7 +32,7 @@ function mergeUniqueShouts(existing: Shout[], incoming: Shout[]) {
 }
 
 export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
-  const [following, setFollowing] = useState<Shout[]>([])
+  const [following, setFollowing] = useState<FeedItem[]>([])
   const [discover, setDiscover] = useState<Shout[]>([])
   const [followingOffset, setFollowingOffset] = useState(0)
   const [discoverOffset, setDiscoverOffset] = useState(0)
@@ -65,7 +77,7 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
         if (page.following.length === 0) {
           setHasMoreFollowing(false)
         } else {
-          setFollowing((prev) => mergeUniqueShouts(prev, page.following))
+          setFollowing((prev) => mergeUniqueFeedItems(prev, page.following))
           setFollowingOffset((prev) => prev + page.following.length)
           if (page.following.length < PAGE_SIZE) {
             setHasMoreFollowing(false)
@@ -109,8 +121,13 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             From people you follow
           </h2>
-          {following.map((shout) => (
-            <ShoutCard key={`f-${shout.id}`} shout={shout} currentUserId={userId} />
+          {following.map((item) => (
+            <ShoutCard
+              key={feedItemKey(item)}
+              shout={item.shout}
+              currentUserId={userId}
+              reshoutedBy={item.reshouted_by}
+            />
           ))}
         </section>
       )}

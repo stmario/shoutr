@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { ProfileHeader } from "@/components/profile-header"
 import { ShoutList } from "@/components/shout-list"
+import { ProfileReshoutList } from "@/components/profile-reshout-list"
 import { getUserProfile, getUserShouts } from "@/app/actions/profile"
 import { getCurrentUser } from "@/app/actions/auth"
 import { notFound } from "next/navigation"
@@ -46,6 +47,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               Shouts
             </TabsTrigger>
             <TabsTrigger
+              value="reshouts"
+              className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-700 rounded-none"
+            >
+              Reshouts
+            </TabsTrigger>
+            <TabsTrigger
               value="likes"
               className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-700 rounded-none"
             >
@@ -55,6 +62,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <TabsContent value="shouts" className="mt-0">
             <div className="container max-w-2xl mx-auto px-4 py-4">
               <ShoutList initialShouts={userShouts} userId={currentUser?.id} profileId={profile.id} />
+            </div>
+          </TabsContent>
+          <TabsContent value="reshouts" className="mt-0">
+            <div className="container max-w-2xl mx-auto px-4 py-4">
+              <ProfileReshoutList
+                profileId={profile.id}
+                profileUsername={profile.username}
+                profileAvatarUrl={profile.avatar_url}
+                currentUserId={currentUser?.id}
+              />
             </div>
           </TabsContent>
           <TabsContent value="likes" className="mt-0">

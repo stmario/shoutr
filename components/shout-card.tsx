@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, MessageCircle, Repeat2, Bookmark } from "lucide-react"
+import { Heart, MessageCircle, Repeat2, Bookmark, Repeat } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { ClientTime } from "@/components/client-time"
-import { reshout } from "@/app/actions/shouts"
+import { toggleReshout, getShoutReshoutStatus } from "@/app/actions/reshout-actions"
+import type { ReshoutedBy } from "@/app/actions/shouts"
 import { toggleLikeShout, getShoutLikeStatus, getUserStakedLikePower } from "@/app/actions/vote-actions"
 import { addBookmark, removeBookmark, isBookmarked } from "@/app/actions/bookmark-actions"
 import { useToast } from "@/hooks/use-toast"
@@ -34,6 +35,7 @@ interface ShoutCardProps {
   currentUserWallet?: string
   isReshouted?: boolean
   isBookmarked?: boolean
+  reshoutedBy?: ReshoutedBy
   onBookmarkChange?: (bookmarked: boolean) => void
 }
 
@@ -43,6 +45,7 @@ export function ShoutCard({
   currentUserWallet: _currentUserWallet,
   isReshouted = false,
   isBookmarked: initialIsBookmarked = false,
+  reshoutedBy,
   onBookmarkChange,
 }: ShoutCardProps) {
   const initialTotal = shout.vote_count?.toString() ?? "0"
@@ -56,6 +59,7 @@ export function ShoutCard({
   const [bookmarked, setBookmarked] = useState(initialIsBookmarked)
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
   const [isLikeLoading, setIsLikeLoading] = useState(false)
+  const [isReshoutLoading, setIsReshoutLoading] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -76,6 +80,10 @@ export function ShoutCard({
       if (power.success && power.formatted !== undefined) {
         setStakedLikePower(power.formatted)
       }
+
+      const reshoutStatus = await getShoutReshoutStatus(shout.id)
+      setReshouted(reshoutStatus.reshouted)
+      setReshoutCount(reshoutStatus.count)
     }
 
     void checkStatus()
@@ -126,16 +134,39 @@ export function ShoutCard({
   }
 
   const handleReshout = async () => {
-    if (!currentUserId) return
+    if (!currentUserId || isReshoutLoading) return
+
+    setIsReshoutLoading(true)
+    const prevReshouted = reshouted
+    const prevCount = reshoutCount
 
     try {
-      await reshout(currentUserId, shout.id)
-      if (!reshouted) {
-        setReshoutCount((prev) => prev + 1)
+      const result = await toggleReshout(shout.id)
+
+      if (!result.success) {
+        toast({
+          title: "Cannot reshout",
+          description: result.message || "Failed to reshout",
+          variant: "destructive",
+        })
+        return
       }
-      setReshouted(true)
+
+      setReshouted(result.reshouted ?? false)
+      if (result.count !== undefined) {
+        setReshoutCount(result.count)
+      }
     } catch (error) {
       console.error("Error reshouting:", error)
+      setReshouted(prevReshouted)
+      setReshoutCount(prevCount)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsReshoutLoading(false)
     }
   }
 
@@ -191,7 +222,18 @@ export function ShoutCard({
 
   return (
     <Card className="border-b border-x-0 rounded-none first:border-t-0 last:border-b-0 md:border md:rounded-lg">
-      <CardHeader className="p-4 pb-0 flex flex-row gap-3">
+      {reshoutedBy && (
+        <div className="px-4 pt-3 pb-0 flex items-center gap-2 text-sm text-muted-foreground">
+          <Repeat className="h-4 w-4 shrink-0 text-green-600" />
+          <Link href={`/profile/${reshoutedBy.username}`} className="font-medium hover:underline text-foreground">
+            @{reshoutedBy.username}
+          </Link>
+          <span>reshouted</span>
+          <span>·</span>
+          <ClientTime value={reshoutedBy.created_at} />
+        </div>
+      )}
+      <CardHeader className={`p-4 pb-0 flex flex-row gap-3 ${reshoutedBy ? "pt-2" : ""}`}>
         <Link href={`/profile/${shout.username}`}>
           <Avatar className="h-10 w-10">
             <AvatarImage src={shout.avatar_url || "/placeholder.svg?height=40&width=40"} alt={shout.username} />
@@ -276,12 +318,19 @@ export function ShoutCard({
           variant="ghost"
           size="sm"
           className={`${
-            reshouted ? "text-green-500" : "text-muted-foreground"
-          } hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-950`}
+            reshouted ? "text-green-600" : "text-muted-foreground"
+          } hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950`}
           onClick={handleReshout}
-          disabled={!currentUserId || reshouted}
+          disabled={!currentUserId || isReshoutLoading || currentUserId === shout.user_id}
+          title={
+            currentUserId === shout.user_id
+              ? "You cannot reshout your own shout"
+              : reshouted
+                ? "Undo reshout"
+                : "Reshout"
+          }
         >
-          <Repeat2 className="mr-1 h-4 w-4" />
+          <Repeat2 className={`mr-1 h-4 w-4 ${reshouted ? "text-green-600" : ""}`} />
           <span className="text-xs">{reshoutCount}</span>
         </Button>
         <Button

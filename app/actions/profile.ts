@@ -57,6 +57,40 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
   }
 }
 
+export async function getUserReshouts(userId: number, limit = 10, offset = 0) {
+  try {
+    const result = await executeQuery(
+      `
+      SELECT 
+        s.id, 
+        s.content, 
+        s.created_at, 
+        s.image_url,
+        s.user_id,
+        u.username,
+        u.avatar_url,
+        u.wallet_address,
+        s.like_count::text as vote_count,
+        (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) as comments_count,
+        (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) as reshouts_count,
+        r.created_at as reshouted_at
+      FROM reshouts r
+      JOIN shouts s ON r.shout_id = s.id
+      JOIN users u ON s.user_id = u.id
+      WHERE r.user_id = $1
+      ORDER BY r.created_at DESC
+      LIMIT $2 OFFSET $3
+    `,
+      [userId, limit, offset],
+    )
+
+    return result
+  } catch (error) {
+    console.error("Error fetching user reshouts:", error)
+    return []
+  }
+}
+
 export async function getUserShouts(userId: number, limit = 10, offset = 0) {
   try {
     const result = await executeQuery(

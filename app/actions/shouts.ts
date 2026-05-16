@@ -22,6 +22,20 @@ export type Shout = {
   reshouts_count: number
 }
 
+export type ReshoutedBy = {
+  id: number
+  username: string
+  avatar_url: string | null
+  created_at: string
+}
+
+export type FeedItem = {
+  item_type: "shout" | "reshout"
+  sort_at: string
+  shout: Shout
+  reshouted_by?: ReshoutedBy
+}
+
 const SHOUT_SELECT = `
   SELECT 
     s.id, 
@@ -40,24 +54,118 @@ const SHOUT_SELECT = `
 `
 
 export type HomeFeed = {
-  following: Shout[]
+  following: FeedItem[]
   discover: Shout[]
 }
 
-async function getFollowingShouts(userId: number, limit: number, offset: number): Promise<Shout[]> {
+function normalizeShoutRow(row: Record<string, unknown>): Shout {
+  return {
+    id: Number(row.id),
+    content: String(row.content ?? ""),
+    created_at: String(row.created_at),
+    image_url: row.image_url != null ? String(row.image_url) : null,
+    user_id: Number(row.user_id),
+    username: String(row.username),
+    avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
+    wallet_address: row.wallet_address != null ? String(row.wallet_address) : null,
+    vote_count: row.vote_count != null ? String(row.vote_count) : "0",
+    comments_count: Number(row.comments_count ?? 0),
+    reshouts_count: Number(row.reshouts_count ?? 0),
+  }
+}
+
+function normalizeFeedRow(row: Record<string, unknown>): FeedItem {
+  const shout = normalizeShoutRow(row)
+  const itemType = row.item_type === "reshout" ? "reshout" : "shout"
+
+  if (itemType === "reshout" && row.reshouter_id != null) {
+    return {
+      item_type: "reshout",
+      sort_at: String(row.sort_at),
+      shout,
+      reshouted_by: {
+        id: Number(row.reshouter_id),
+        username: String(row.reshouter_username),
+        avatar_url: row.reshouter_avatar_url != null ? String(row.reshouter_avatar_url) : null,
+        created_at: String(row.reshout_at ?? row.sort_at),
+      },
+    }
+  }
+
+  return {
+    item_type: "shout",
+    sort_at: String(row.sort_at),
+    shout,
+  }
+}
+
+async function getFollowingFeed(userId: number, limit: number, offset: number): Promise<FeedItem[]> {
   const result = await executeQuery(
-    `${SHOUT_SELECT}
-    WHERE s.user_id IN (
-      SELECT following_id FROM follows WHERE follower_id = $3
-      UNION
-      SELECT $3
-    )
-    ORDER BY s.created_at DESC
+    `
+    SELECT * FROM (
+      SELECT
+        'shout'::text AS item_type,
+        s.created_at AS sort_at,
+        NULL::integer AS reshouter_id,
+        NULL::text AS reshouter_username,
+        NULL::text AS reshouter_avatar_url,
+        NULL::timestamptz AS reshout_at,
+        s.id,
+        s.content,
+        s.created_at,
+        s.image_url,
+        s.user_id,
+        u.username,
+        u.avatar_url,
+        u.wallet_address,
+        s.like_count::text AS vote_count,
+        (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) AS comments_count,
+        (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) AS reshouts_count
+      FROM shouts s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.user_id IN (
+        SELECT following_id FROM follows WHERE follower_id = $3
+        UNION
+        SELECT $3
+      )
+
+      UNION ALL
+
+      SELECT
+        'reshout'::text AS item_type,
+        r.created_at AS sort_at,
+        ru.id AS reshouter_id,
+        ru.username AS reshouter_username,
+        ru.avatar_url AS reshouter_avatar_url,
+        r.created_at AS reshout_at,
+        s.id,
+        s.content,
+        s.created_at,
+        s.image_url,
+        s.user_id,
+        u.username,
+        u.avatar_url,
+        u.wallet_address,
+        s.like_count::text AS vote_count,
+        (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) AS comments_count,
+        (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) AS reshouts_count
+      FROM reshouts r
+      JOIN shouts s ON r.shout_id = s.id
+      JOIN users u ON s.user_id = u.id
+      JOIN users ru ON r.user_id = ru.id
+      WHERE r.user_id IN (
+        SELECT following_id FROM follows WHERE follower_id = $3
+        UNION
+        SELECT $3
+      )
+    ) feed
+    ORDER BY sort_at DESC
     LIMIT $1 OFFSET $2
-  `,
+    `,
     [limit, offset, userId],
   )
-  return result as Shout[]
+
+  return (result as Record<string, unknown>[]).map(normalizeFeedRow)
 }
 
 async function getDiscoverShouts(userId: number, limit: number, offset: number): Promise<Shout[]> {
@@ -90,7 +198,7 @@ export async function getHomeFeed(
 
     const [following, discover] = await Promise.all([
       followingLimit > 0
-        ? getFollowingShouts(currentUser.id, followingLimit, followingOffset)
+        ? getFollowingFeed(currentUser.id, followingLimit, followingOffset)
         : Promise.resolve([]),
       discoverLimit > 0
         ? getDiscoverShouts(currentUser.id, discoverLimit, discoverOffset)
@@ -110,7 +218,8 @@ export async function getShouts(limit = 10, offset = 0): Promise<Shout[]> {
 
     if (currentUser) {
       const { following, discover } = await getHomeFeed(limit, offset, limit, offset)
-      return mergeUniqueShoutsById([...following, ...discover])
+      const followingShouts = following.map((item) => item.shout)
+      return mergeUniqueShoutsById([...followingShouts, ...discover])
     }
 
     const result = await executeQuery(
