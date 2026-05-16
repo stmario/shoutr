@@ -1,5 +1,7 @@
 import { ethers } from "ethers"
 
+export const METAMASK_DOWNLOAD_URL = "https://metamask.io/download"
+
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
   on?: (event: string, handler: (...args: unknown[]) => void) => void

@@ -9,9 +9,11 @@ import { Wallet } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { clearAuthSession } from "@/app/actions/auth"
 import {
+  getEthereumProvider,
   getSelectedEthereumAddress,
   pickEthereumAccount,
 } from "@/lib/ethereum-wallet"
+import { MetamaskInstallLink, MetamaskInstallPrompt } from "@/components/metamask-install-link"
 
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
@@ -24,6 +26,7 @@ export function SiweSignIn() {
   const [isSwitching, setIsSwitching] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [sessionWallet, setSessionWallet] = useState<string | null>(null)
+  const [hasWallet, setHasWallet] = useState(true)
 
   const refreshWallet = useCallback(async () => {
     try {
@@ -36,6 +39,7 @@ export function SiweSignIn() {
   }, [])
 
   useEffect(() => {
+    setHasWallet(Boolean(getEthereumProvider()))
     void refreshWallet()
 
     const ethereum = typeof window !== "undefined" ? window.ethereum : undefined
@@ -92,7 +96,8 @@ export function SiweSignIn() {
     setError(null)
 
     if (typeof window === "undefined" || !window.ethereum) {
-      setError("Install an Ethereum wallet (for example MetaMask) to sign in.")
+      setHasWallet(false)
+      setError("Install MetaMask to sign in.")
       return
     }
 
@@ -200,9 +205,25 @@ export function SiweSignIn() {
         </p>
       )}
 
+      {!hasWallet && (
+        <Alert>
+          <AlertDescription className="text-sm">
+            <MetamaskInstallPrompt />
+          </AlertDescription>
+        </Alert>
+      )}
+
       {error && (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="text-sm">
+            {error}
+            {!hasWallet && (
+              <>
+                {" "}
+                <MetamaskInstallLink />
+              </>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -232,7 +253,7 @@ export function SiweSignIn() {
         variant="outline"
         className="w-full border-purple-200 dark:border-purple-900"
         onClick={() => void signIn()}
-        disabled={isLoading || isSwitching}
+        disabled={isLoading || isSwitching || !hasWallet}
       >
         <Wallet className="mr-2 h-4 w-4" />
         {isLoading ? "Waiting for wallet…" : "Sign in with Ethereum"}

@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Wallet, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { connectWallet, formatEthAmount, getWalletBalance } from "@/lib/ico-contract"
+import { MetamaskInstallLink, MetamaskInstallPrompt } from "@/components/metamask-install-link"
 
 export function WalletConnect() {
   const [account, setAccount] = useState<string | null>(null)
   const [balance, setBalance] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasWallet, setHasWallet] = useState(true)
+
+  useEffect(() => {
+    setHasWallet(typeof window !== "undefined" && Boolean(window.ethereum))
+  }, [])
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -29,6 +35,12 @@ export function WalletConnect() {
   }, [])
 
   const handleConnect = async () => {
+    if (!window.ethereum) {
+      setHasWallet(false)
+      setError("MetaMask is not installed.")
+      return
+    }
+
     setIsConnecting(true)
     setError(null)
     try {
@@ -52,15 +64,32 @@ export function WalletConnect() {
 
   return (
     <div className="flex flex-col gap-4">
+      {!hasWallet && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <MetamaskInstallPrompt />
+          </AlertDescription>
+        </Alert>
+      )}
+
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {error}
+            {!hasWallet && (
+              <>
+                {" "}
+                <MetamaskInstallLink />
+              </>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 
       {!account ? (
-        <Button onClick={handleConnect} disabled={isConnecting} className="flex items-center gap-2">
+        <Button onClick={handleConnect} disabled={isConnecting || !hasWallet} className="flex items-center gap-2">
           <Wallet className="h-4 w-4" />
           {isConnecting ? "Connecting…" : "Connect wallet"}
         </Button>

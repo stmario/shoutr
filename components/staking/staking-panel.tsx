@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { refreshMyLikePower } from "@/app/actions/vote-actions"
+import { MetamaskInstallLink, MetamaskInstallPrompt } from "@/components/metamask-install-link"
 import {
   approveStaking,
   connectWallet,
@@ -65,6 +66,7 @@ export function StakingPanel() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
+  const [hasWallet, setHasWallet] = useState(true)
 
   const refresh = useCallback(async (wallet: string | null) => {
     if (!wallet || !contractConfigured) {
@@ -86,6 +88,8 @@ export function StakingPanel() {
 
   useEffect(() => {
     let cancelled = false
+
+    setHasWallet(typeof window !== "undefined" && Boolean(window.ethereum))
 
     const init = async () => {
       const connected = await getConnectedAddress()
@@ -141,6 +145,12 @@ export function StakingPanel() {
   }
 
   const handleConnect = async () => {
+    if (!window.ethereum) {
+      setHasWallet(false)
+      setError("MetaMask is not installed.")
+      return
+    }
+
     setIsConnecting(true)
     setError(null)
     const ok = await ensureCorrectChain()
@@ -270,10 +280,13 @@ export function StakingPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!address ? (
-            <Button onClick={handleConnect} disabled={isConnecting} className="w-full gap-2">
-              <Wallet className="h-4 w-4" />
-              {isConnecting ? "Connecting…" : "Connect wallet"}
-            </Button>
+            <div className="space-y-3">
+              {!hasWallet && <MetamaskInstallPrompt />}
+              <Button onClick={handleConnect} disabled={isConnecting || !hasWallet} className="w-full gap-2">
+                <Wallet className="h-4 w-4" />
+                {isConnecting ? "Connecting…" : "Connect wallet"}
+              </Button>
+            </div>
           ) : (
             <div className="flex items-center justify-between rounded-md bg-muted p-3 text-sm">
               <span className="font-medium">{formatAddress(address)}</span>
@@ -344,7 +357,15 @@ export function StakingPanel() {
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                {!hasWallet && (
+                  <>
+                    {" "}
+                    <MetamaskInstallLink />
+                  </>
+                )}
+              </AlertDescription>
             </Alert>
           )}
           {success && (

@@ -35,6 +35,7 @@ function revalidateShoutPaths(shoutId: number, authorUsername?: string) {
 
 export async function getShoutModerationDeleteEligibility(
   shoutId: number,
+  options?: { authorWalletAddress?: string | null },
 ): Promise<ShoutDeleteEligibility> {
   const currentUser = await getCurrentUser()
 
@@ -65,13 +66,16 @@ export async function getShoutModerationDeleteEligibility(
     return { canDelete: false, message: "Moderation only applies to other users' shouts" }
   }
 
-  const authorRows = await db
-    .select({ wallet_address: users.wallet_address })
-    .from(users)
-    .where(eq(users.id, shout.user_id))
-    .limit(1)
+  let authorWallet = options?.authorWalletAddress?.trim() || null
+  if (!authorWallet) {
+    const authorRows = await db
+      .select({ wallet_address: users.wallet_address })
+      .from(users)
+      .where(eq(users.id, shout.user_id))
+      .limit(1)
+    authorWallet = authorRows[0]?.wallet_address ?? null
+  }
 
-  const authorWallet = authorRows[0]?.wallet_address
   if (!authorWallet) {
     return { canDelete: false, message: "Author has no linked wallet; cannot verify stake" }
   }

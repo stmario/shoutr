@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ import {
   getShotPerEthRate,
   type IcoStats,
 } from "@/lib/ico-contract"
+import { MetamaskInstallLink, MetamaskInstallPrompt } from "@/components/metamask-install-link"
 
 type TokenPurchaseProps = {
   stats: IcoStats
@@ -26,6 +27,11 @@ export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
+  const [hasWallet, setHasWallet] = useState(true)
+
+  useEffect(() => {
+    setHasWallet(typeof window !== "undefined" && Boolean(window.ethereum))
+  }, [])
 
   const tokensToReceiveDisplay = formatEstimateShotFromEth(amount, stats.tokensPerEth)
   const exampleShotDisplay = formatEstimateShotFromEth("0.1", stats.tokensPerEth)
@@ -49,7 +55,8 @@ export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
 
     try {
       if (!window.ethereum) {
-        throw new Error("Connect an Ethereum wallet (e.g. MetaMask) to buy SHOT.")
+        setHasWallet(false)
+        throw new Error("MetaMask is not installed.")
       }
 
       const result = await buyTokensWithEth(amount)
@@ -95,9 +102,13 @@ export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
         )}
       </div>
 
+      {!hasWallet && <MetamaskInstallPrompt />}
+
       <Button
         onClick={handlePurchase}
-        disabled={isProcessing || !stats.canBuyOnChain || !amount || Number.parseFloat(amount) <= 0}
+        disabled={
+          isProcessing || !hasWallet || !stats.canBuyOnChain || !amount || Number.parseFloat(amount) <= 0
+        }
         className="w-full"
       >
         {isProcessing
@@ -112,7 +123,15 @@ export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {error}
+            {!hasWallet && (
+              <>
+                {" "}
+                <MetamaskInstallLink />
+              </>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 

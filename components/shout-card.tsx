@@ -71,8 +71,12 @@ export function ShoutCard({
   const [isLikeLoading, setIsLikeLoading] = useState(false)
   const [isReshoutLoading, setIsReshoutLoading] = useState(false)
   const [canModerateDelete, setCanModerateDelete] = useState(false)
+  const [moderationCheckLoading, setModerationCheckLoading] = useState(false)
+  const [moderationMessage, setModerationMessage] = useState<string | undefined>()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
+
+  const showModerationMenu = Boolean(currentUserId) && currentUserId !== shout.user_id
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -96,13 +100,33 @@ export function ShoutCard({
       const reshoutStatus = await getShoutReshoutStatus(shout.id)
       setReshouted(reshoutStatus.reshouted)
       setReshoutCount(reshoutStatus.count)
-
-      const deleteEligibility = await getShoutModerationDeleteEligibility(shout.id)
-      setCanModerateDelete(deleteEligibility.canDelete)
     }
 
     void checkStatus()
   }, [shout.id, currentUserId, initialIsBookmarked])
+
+  const handleModerationMenuOpenChange = (open: boolean) => {
+    if (!open || !showModerationMenu) return
+
+    void (async () => {
+      setModerationCheckLoading(true)
+      setCanModerateDelete(false)
+      setModerationMessage(undefined)
+
+      try {
+        const deleteEligibility = await getShoutModerationDeleteEligibility(shout.id, {
+          authorWalletAddress: shout.wallet_address,
+        })
+        setCanModerateDelete(deleteEligibility.canDelete)
+        setModerationMessage(deleteEligibility.message)
+      } catch (error) {
+        console.error("Moderation eligibility check failed:", error)
+        setModerationMessage("Could not verify staked SHOT")
+      } finally {
+        setModerationCheckLoading(false)
+      }
+    })()
+  }
 
   const likeDisplay = formatLikeWeightShot(likeTotalWei)
 
@@ -277,23 +301,33 @@ export function ShoutCard({
             <ClientTime value={shout.created_at} className="text-muted-foreground text-sm" />
           </div>
         </div>
-        {canModerateDelete && (
+        {showModerationMenu && (
           <>
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={handleModerationMenuOpenChange}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">Shout actions</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="max-w-xs">
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onSelect={() => setDeleteDialogOpen(true)}
+                  disabled={moderationCheckLoading || !canModerateDelete}
+                  onSelect={(event) => {
+                    if (moderationCheckLoading || !canModerateDelete) {
+                      event.preventDefault()
+                      return
+                    }
+                    setDeleteDialogOpen(true)
+                  }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete shout
+                  {moderationCheckLoading ? "Checking stake…" : "Delete shout"}
                 </DropdownMenuItem>
+                {!moderationCheckLoading && moderationMessage && !canModerateDelete && (
+                  <p className="px-2 py-1.5 text-xs text-muted-foreground">{moderationMessage}</p>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
             <DeleteShoutDialog
