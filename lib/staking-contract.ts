@@ -2,11 +2,12 @@
 
 import { ethers } from "ethers"
 import StakingABI from "./StakingABI.json"
+import { getChainDisplayName } from "./ethereum-network"
 import {
   collectRpcUrls,
   createStaticJsonRpcProvider,
+  defaultRpcFailureHint,
   parseUserRpcUrls,
-  shouldAppendSepoliaFallbacks,
 } from "./ethers-read-provider"
 
 const erc20Abi = [
@@ -32,18 +33,15 @@ function getRpcUrls(): string[] {
   const urls = collectRpcUrls(parseUserRpcUrls())
   if (urls.length === 0) {
     throw new Error(
-      "NEXT_PUBLIC_ETHEREUM_PROVIDER_URL is not set. Use a Sepolia RPC (comma-separated for fallbacks).",
+      "NEXT_PUBLIC_ETHEREUM_PROVIDER_URL is not set. Use an Ethereum mainnet RPC (comma-separated for fallbacks).",
     )
   }
   return urls
 }
 
 function rpcFailureMessage(urlCount: number, lastError: unknown): string {
-  const hint = shouldAppendSepoliaFallbacks(parseUserRpcUrls())
-    ? " Sepolia public RPC fallbacks are tried automatically unless ETHEREUM_RPC_NO_DEFAULT_FALLBACKS=1."
-    : ""
   const detail = lastError instanceof Error ? lastError.message : String(lastError)
-  return `All ${urlCount} RPC endpoint(s) failed. ${detail}.${hint}`
+  return `All ${urlCount} RPC endpoint(s) failed. ${detail}.${defaultRpcFailureHint(parseUserRpcUrls())}`
 }
 
 /** Read-only provider — first configured RPC (prefer collectRpcUrls + retry for reads). */
@@ -80,7 +78,7 @@ async function assertStakingContractDeployed(provider: ethers.Provider) {
   const code = await provider.getCode(address)
   if (code === "0x") {
     throw new Error(
-      "No staking contract at the configured address on this network. Verify NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS and NEXT_PUBLIC_ETHEREUM_PROVIDER_URL (Sepolia).",
+      `No staking contract at the configured address on this network. Verify NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS and NEXT_PUBLIC_ETHEREUM_PROVIDER_URL (${getChainDisplayName()}).`,
     )
   }
 }
@@ -247,7 +245,7 @@ export function formatStakeError(error: unknown): string {
     if (msg.includes("Amount must be greater than 0")) return "Enter an amount greater than zero."
     if (msg.includes("user rejected")) return "Transaction was rejected in your wallet."
     if (msg.includes("BAD_DATA") || msg.includes("could not decode")) {
-      return "Could not read the staking contract. Check that your RPC and contract address are on Sepolia."
+      return `Could not read the staking contract. Check that your RPC and contract address are on ${getChainDisplayName()}.`
     }
     if (msg.includes("No staking contract")) return msg
     return msg.length > 180 ? `${msg.slice(0, 180)}…` : msg

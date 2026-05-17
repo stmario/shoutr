@@ -57,7 +57,7 @@ export function IcoSidebar() {
             <ShotTokenLogo size={24} />
             <CardTitle className="text-lg">SHOT token sale</CardTitle>
           </div>
-          <CardDescription>Buy SHOT with ETH on Sepolia</CardDescription>
+          <CardDescription>Buy SHOT with ETH on Ethereum mainnet</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (

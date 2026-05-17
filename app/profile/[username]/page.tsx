@@ -3,7 +3,7 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { ProfileHeader } from "@/components/profile-header"
 import { ShoutList } from "@/components/shout-list"
 import { ProfileReshoutList } from "@/components/profile-reshout-list"
-import { getUserProfile, getUserShouts } from "@/app/actions/profile"
+import { getProfileStakedShot, getUserProfile, getUserShouts } from "@/app/actions/profile"
 import { getCurrentUser } from "@/app/actions/auth"
 import { notFound } from "next/navigation"
 
@@ -24,7 +24,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const currentUser = await getCurrentUser()
   const isCurrentUser = currentUser?.id === profile.id
 
-  const userShouts = await getUserShouts(profile.id, 10, 0)
+  const [userShouts, stakedShot] = await Promise.all([
+    getUserShouts(profile.id, 10, 0),
+    getProfileStakedShot(profile.wallet_address),
+  ])
 
   return (
     <SidebarInset>
@@ -36,7 +39,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       </header>
 
       <div>
-        <ProfileHeader profile={profile} isCurrentUser={isCurrentUser} />
+        <ProfileHeader profile={profile} isCurrentUser={isCurrentUser} stakedShot={stakedShot} />
 
         <Tabs defaultValue="shouts" className="mt-6">
           <TabsList className="w-full justify-start px-4 border-b rounded-none h-12">

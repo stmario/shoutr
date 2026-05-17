@@ -1,10 +1,10 @@
 import { ethers } from "ethers"
 import StakingABI from "./StakingABI.json"
+import { defaultRpcFailureHint } from "./ethereum-network"
 import {
   collectRpcUrls,
   createStaticJsonRpcProvider,
   parseUserRpcUrls,
-  shouldAppendSepoliaFallbacks,
 } from "./ethers-read-provider"
 
 export type StakedBalance = {
@@ -22,11 +22,8 @@ function getRpcUrls(): string[] {
 }
 
 function rpcFailureMessage(urlCount: number, lastError: unknown): string {
-  const hint = shouldAppendSepoliaFallbacks(parseUserRpcUrls())
-    ? " Sepolia RPC fallbacks are used when configured."
-    : ""
   const detail = lastError instanceof Error ? lastError.message : String(lastError)
-  return `All ${urlCount} RPC endpoint(s) failed. ${detail}.${hint}`
+  return `All ${urlCount} RPC endpoint(s) failed. ${detail}.${defaultRpcFailureHint(parseUserRpcUrls())}`
 }
 
 async function readStakedBalance(provider: ethers.Provider, walletAddress: string): Promise<StakedBalance> {

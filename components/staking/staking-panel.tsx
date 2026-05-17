@@ -22,6 +22,8 @@ import {
   unstakeTokens,
   type StakeInfo,
 } from "@/lib/staking-contract"
+import { getChainDisplayName, getConfiguredChainId } from "@/lib/ethereum-network"
+import { getExplorerTxUrl } from "@/lib/ico-contract"
 
 function formatUnits(value: bigint, decimals: number, maxFraction = 4) {
   const formatted = ethers.formatUnits(value, decimals)
@@ -45,13 +47,6 @@ function formatDuration(seconds: number) {
 function formatUnlockDate(unlockTime: bigint) {
   if (unlockTime === 0n) return "—"
   return new Date(Number(unlockTime) * 1000).toLocaleString()
-}
-
-function getExplorerTxUrl(txHash: string) {
-  const chainId = Number.parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "1", 10)
-  if (chainId === 11155111) return `https://sepolia.etherscan.io/tx/${txHash}`
-  if (chainId === 1) return `https://etherscan.io/tx/${txHash}`
-  return `https://etherscan.io/tx/${txHash}`
 }
 
 export function StakingPanel() {
@@ -127,7 +122,7 @@ export function StakingPanel() {
 
   const ensureCorrectChain = async () => {
     if (!window.ethereum) return false
-    const chainId = Number.parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "1", 10)
+    const chainId = getConfiguredChainId()
     const provider = new BrowserProvider(window.ethereum)
     const network = await provider.getNetwork()
     if (Number(network.chainId) === chainId) return true
@@ -139,7 +134,7 @@ export function StakingPanel() {
       })
       return true
     } catch {
-      setError(`Switch your wallet to chain ID ${chainId} (NEXT_PUBLIC_CHAIN_ID).`)
+      setError(`Switch your wallet to ${getChainDisplayName(chainId)} (chain ID ${chainId}).`)
       return false
     }
   }

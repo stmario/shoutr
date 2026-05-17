@@ -14,6 +14,7 @@ import {
   pickEthereumAccount,
 } from "@/lib/ethereum-wallet"
 import { MetamaskInstallLink, MetamaskInstallPrompt } from "@/components/metamask-install-link"
+import { getChainDisplayName } from "@/lib/ethereum-network"
 
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
@@ -130,7 +131,7 @@ export function SiweSignIn() {
           })
         } catch (switchErr) {
           console.error(switchErr)
-          setError(`Please switch your wallet to the network with chain ID ${chainId} (NEXT_PUBLIC_CHAIN_ID).`)
+          setError(`Please switch your wallet to ${getChainDisplayName(chainId)} (chain ID ${chainId}).`)
           return
         }
         provider = new BrowserProvider(window.ethereum)

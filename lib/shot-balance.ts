@@ -1,10 +1,10 @@
 import { ethers } from "ethers"
 import icoAbi from "./ICOABI.json"
+import { defaultRpcFailureHint } from "./ethereum-network"
 import {
   collectRpcUrls,
   createStaticJsonRpcProvider,
   parseUserRpcUrls,
-  shouldAppendSepoliaFallbacks,
 } from "./ethers-read-provider"
 
 const erc20BalanceAbi = ["function balanceOf(address account) view returns (uint256)"]
@@ -33,12 +33,8 @@ export async function getShotBalance(walletAddress: string): Promise<bigint> {
     }
   }
 
-  const hint = shouldAppendSepoliaFallbacks(userUrls)
-    ? " For Sepolia, set NEXT_PUBLIC_CHAIN_ID=11155111 and/or use a healthy RPC (comma-separated for fallbacks). Public fallbacks are appended after your URL unless ETHEREUM_RPC_NO_DEFAULT_FALLBACKS=1."
-    : " Set ETHEREUM_RPC_URL to a reliable JSON-RPC endpoint for your chain (comma-separated for fallbacks)."
-
   throw new Error(
-    `All RPC endpoints failed after ${urls.length} attempt(s). Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}.${hint}`,
+    `All RPC endpoints failed after ${urls.length} attempt(s). Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}.${defaultRpcFailureHint(userUrls)}`,
   )
 }
 

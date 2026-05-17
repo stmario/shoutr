@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { generateNonce } from "siwe"
+import { getConfiguredChainId } from "@/lib/ethereum-network"
 
 const NONCE_COOKIE = "siwe_nonce"
 const NONCE_MAX_AGE = 600
 
 export async function GET() {
   const nonce = generateNonce()
-  const chainId = Number.parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "1", 10)
+  const chainId = getConfiguredChainId()
 
   const cookieStore = await cookies()
   cookieStore.set(NONCE_COOKIE, nonce, {

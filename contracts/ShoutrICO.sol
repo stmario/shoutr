@@ -14,7 +14,7 @@ contract ShoutrICO is ReentrancyGuard, Ownable, Pausable {
 
     uint256 public constant TOKENS_PER_ETH = 10_000;
     uint256 public constant HARD_CAP = 90_000 ether;
-    uint256 public constant END_DATE = 1_778_975_999;
+    uint256 public constant END_DATE = 1_798_847_999;
 
     uint256 public totalETHCollected;
     uint256 public totalTokensSold;

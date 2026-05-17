@@ -64,7 +64,7 @@ export default function ICOPage() {
       <div className="container max-w-4xl py-8 text-center">
         <p className="text-destructive">{loadError ?? "ICO contract unavailable"}</p>
         <p className="text-sm text-muted-foreground mt-2">
-          Set <code className="text-xs">NEXT_PUBLIC_ICO_CONTRACT_ADDRESS</code> and a Sepolia RPC, then deploy
+          Set <code className="text-xs">NEXT_PUBLIC_ICO_CONTRACT_ADDRESS</code> and an Ethereum mainnet RPC, then deploy
           ShoutrICO.
         </p>
       </div>
@@ -185,7 +185,7 @@ export default function ICOPage() {
             SHOT per ETH (sale hard cap {ICO_HARD_CAP_ETH.toLocaleString("de-CH")} ETH).
           </p>
           <p>
-            Connect your wallet on Sepolia, enter an ETH amount, and confirm. SHOT is transferred from the ICO
+            Connect your wallet on Ethereum mainnet, enter an ETH amount, and confirm. SHOT is transferred from the ICO
             contract to your wallet at {formatShotCount(SHOT_PER_ETH)} SHOT per 1 ETH. ETH stays in the contract until
             the owner calls <code className="text-xs">withdrawETH</code>.
           </p>

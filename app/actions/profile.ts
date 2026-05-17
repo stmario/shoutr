@@ -1,6 +1,8 @@
 "use server"
 
 import { executeQuery } from "@/lib/db"
+import { formatLikeWeightShot } from "@/lib/like-weight"
+import { getStakedBalance } from "@/lib/staking-read"
 import { getCurrentUser } from "./auth"
 
 export type ProfileUser = {
@@ -8,11 +10,25 @@ export type ProfileUser = {
   username: string
   bio: string | null
   avatar_url: string | null
+  wallet_address: string | null
   created_at: string
   followers_count: number
   following_count: number
   shouts_count: number
   is_following: boolean
+}
+
+/** Live staked SHOT for a profile wallet (e.g. "1,250 SHOT"). */
+export async function getProfileStakedShot(walletAddress: string | null): Promise<string | null> {
+  if (!walletAddress) return null
+
+  try {
+    const staked = await getStakedBalance(walletAddress)
+    return formatLikeWeightShot(staked.amount, staked.decimals)
+  } catch (error) {
+    console.error("Profile staked balance read failed:", error)
+    return null
+  }
 }
 
 export async function getUserProfile(username: string): Promise<ProfileUser | null> {
@@ -26,7 +42,8 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
         u.id, 
         u.username, 
         u.bio, 
-        u.avatar_url, 
+        u.avatar_url,
+        u.wallet_address,
         u.created_at,
         (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as followers_count,
         (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,

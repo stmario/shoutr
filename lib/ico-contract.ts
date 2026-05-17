@@ -8,8 +8,8 @@ import {
   parseUserRpcUrls,
 } from "./ethers-read-provider"
 
-/** Default when END_DATE() is unavailable (16 May 2026 23:59:59 UTC). */
-export const SHOUTR_ICO_END_TIMESTAMP = 1_778_975_999
+/** Default when END_DATE() is unavailable (1 January 2027 23:59:59 UTC). */
+export const SHOUTR_ICO_END_TIMESTAMP = 1_798_847_999
 
 export const ICO_SALE_ENDED_TITLE = "The SHOT sale has ended"
 
@@ -92,12 +92,7 @@ export function formatIcoError(error: unknown): string {
   return "Transaction failed."
 }
 
-export function getExplorerTxUrl(txHash: string) {
-  const chainId = Number.parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "1", 10)
-  if (chainId === 11155111) return `https://sepolia.etherscan.io/tx/${txHash}`
-  if (chainId === 1) return `https://etherscan.io/tx/${txHash}`
-  return `https://etherscan.io/tx/${txHash}`
-}
+export { getExplorerTxUrl } from "./ethereum-network"
 
 /** Format wei as a human-readable ETH string (e.g. "1.25 ETH"). */
 export function formatEthAmount(wei: bigint | string, maxFraction = 4): string {

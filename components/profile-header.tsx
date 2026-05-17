@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { CalendarDays, MapPin, LinkIcon, Edit } from "lucide-react"
+import { CalendarDays, Coins, MapPin, LinkIcon, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FollowButton } from "@/components/follow-button"
 import { MessageButton } from "@/components/message-button"
@@ -10,9 +10,10 @@ import { formatDate } from "@/lib/utils"
 interface ProfileHeaderProps {
   profile: ProfileUser
   isCurrentUser: boolean
+  stakedShot?: string | null
 }
 
-export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, isCurrentUser, stakedShot }: ProfileHeaderProps) {
   return (
     <div className="border-b">
       <div className="h-32 bg-purple-100 dark:bg-purple-900/20"></div>
@@ -86,7 +87,7 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
             </div>
           </div>
 
-          <div className="flex gap-4 mt-3">
+          <div className="flex flex-wrap gap-4 mt-3">
             <Link href={`/profile/${profile.username}/following`} className="text-sm hover:underline">
               <span className="font-bold">{profile.following_count}</span>{" "}
               <span className="text-muted-foreground">Following</span>
@@ -95,6 +96,20 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
               <span className="font-bold">{profile.followers_count}</span>{" "}
               <span className="text-muted-foreground">Followers</span>
             </Link>
+            {stakedShot != null &&
+              (isCurrentUser ? (
+                <Link href="/staking" className="text-sm hover:underline inline-flex items-center gap-1">
+                  <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-bold">{stakedShot}</span>{" "}
+                  <span className="text-muted-foreground">Staked</span>
+                </Link>
+              ) : (
+                <span className="text-sm inline-flex items-center gap-1">
+                  <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-bold">{stakedShot}</span>{" "}
+                  <span className="text-muted-foreground">Staked</span>
+                </span>
+              ))}
           </div>
         </div>
       </div>
