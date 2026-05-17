@@ -1,5 +1,5 @@
 import type React from "react"
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppSidebar } from "@/components/app-sidebar"
 import { IcoSidebar } from "@/components/ico/ico-sidebar"
@@ -14,11 +14,10 @@ export const metadata = {
   generator: "v0.dev",
   icons: {
     icon: [
+      { url: "/token-logo.png", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/logo/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/logo/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: "/token-logo.png",
   },
 }
 
@@ -35,11 +34,16 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TooltipProvider delayDuration={200}>
-          <SidebarProvider>
+          <SidebarProvider defaultOpen>
             <div className="relative flex min-h-screen w-full justify-center">
-              <div className="flex w-full max-w-screen-2xl min-h-screen shadow-sm">
+              <div className="flex w-full max-w-screen-2xl min-h-screen items-start shadow-sm">
                 <AppSidebar />
-                <main className="min-h-screen min-w-0 flex-1 border-x border-border">{children}</main>
+                <SidebarInset
+                  role="main"
+                  className="min-w-0 flex-1 border-x border-border pt-14 md:pt-0"
+                >
+                  {children}
+                </SidebarInset>
                 <IcoSidebar />
               </div>
             </div>

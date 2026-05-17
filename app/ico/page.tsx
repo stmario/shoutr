@@ -27,6 +27,7 @@ import {
   SHOT_TOTAL_SUPPLY,
 } from "@/lib/shot-tokenomics"
 import { Loader2 } from "lucide-react"
+import { ShotTokenLogo } from "@/components/shot-token-logo"
 
 export default function ICOPage() {
   const [stats, setStats] = useState<IcoStats | null>(null)
@@ -80,6 +81,9 @@ export default function ICOPage() {
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8 text-center">
+        <div className="flex justify-center mb-4">
+          <ShotTokenLogo size={64} priority />
+        </div>
         <h1 className="text-4xl font-bold mb-2">Shoutr Token Sale</h1>
         <p className="text-muted-foreground">Buy SHOT with ETH through the on-chain ICO</p>
         <div className="mt-3 flex justify-center gap-2">

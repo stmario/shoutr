@@ -11,6 +11,8 @@ import {
   formatEstimateShotFromEth,
   formatIcoError,
   getExplorerTxUrl,
+  getIcoSaleEndedMessage,
+  getIcoSalePausedMessage,
   getShotPerEthRate,
   type IcoStats,
 } from "@/lib/ico-contract"
@@ -44,7 +46,7 @@ export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
     }
 
     if (!stats.canBuyOnChain) {
-      setError("ICO purchases are not available (ended, paused, hard cap reached, or insufficient SHOT in the contract).")
+      setError(stats.paused ? getIcoSalePausedMessage() : getIcoSaleEndedMessage(stats.endsAt))
       return
     }
 
@@ -117,7 +119,7 @@ export function TokenPurchase({ stats, onPurchased }: TokenPurchaseProps) {
             ? "Buy SHOT with ETH"
             : stats.paused
               ? "Sale paused"
-              : "Purchases unavailable"}
+              : "Sale ended"}
       </Button>
 
       {error && (

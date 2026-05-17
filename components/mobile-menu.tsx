@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogoutButton } from "@/components/logout-button"
 import { UnreadDot } from "@/components/unread-dot"
 import { ShoutrLogo } from "@/components/shoutr-logo"
+import { ShotTokenLogo } from "@/components/shot-token-logo"
 
 type MobileMenuProps = {
   user: any
@@ -56,9 +57,7 @@ export function MobileMenu({ user, hasUnreadNotifications, unreadMessageCount }:
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
-              <Link href="/" onClick={() => setOpen(false)}>
-                <ShoutrLogo />
-              </Link>
+              <ShoutrLogo />
             </div>
             <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
               <X className="h-5 w-5" />
@@ -76,7 +75,11 @@ export function MobileMenu({ user, hasUnreadNotifications, unreadMessageCount }:
                   className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted text-sm font-medium"
                 >
                   <div className="relative">
-                    <item.icon className="h-5 w-5" />
+                    {item.label === "Staking" ? (
+                      <ShotTokenLogo size={20} linkToCoinMarketCap={false} />
+                    ) : (
+                      <item.icon className="h-5 w-5" />
+                    )}
                     {item.showDot && <UnreadDot />}
                     {item.badge != null && item.badge > 0 && (
                       <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-700 text-[10px] font-medium text-white">

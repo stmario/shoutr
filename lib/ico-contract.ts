@@ -11,6 +11,22 @@ import {
 /** Default when END_DATE() is unavailable (16 May 2026 23:59:59 UTC). */
 export const SHOUTR_ICO_END_TIMESTAMP = 1_778_975_999
 
+export const ICO_SALE_ENDED_TITLE = "The SHOT sale has ended"
+
+export function formatIcoEndDate(endsAt: Date): string {
+  return endsAt.toLocaleDateString(undefined, { dateStyle: "long" })
+}
+
+export function getIcoSaleEndedMessage(endsAt: Date = new Date(SHOUTR_ICO_END_TIMESTAMP * 1000)): string {
+  return `Thank you for your interest in SHOT. The public sale closed on ${formatIcoEndDate(endsAt)}. Purchases are no longer available here.`
+}
+
+export const ICO_SALE_PAUSED_TITLE = "Sale temporarily paused"
+
+export function getIcoSalePausedMessage(): string {
+  return "ICO purchases are paused right now. Please check back soon."
+}
+
 export function getIcoContractAddress(): string {
   const contractAddress = process.env.NEXT_PUBLIC_ICO_CONTRACT_ADDRESS
   if (!contractAddress) {
@@ -59,7 +75,7 @@ export function formatIcoError(error: unknown): string {
   if (error instanceof Error) {
     const msg = error.message
     if (msg.includes("ICO ended") || msg.includes("ICO has ended")) {
-      return "This ICO sale has ended on-chain."
+      return getIcoSaleEndedMessage()
     }
     if (msg.includes("Hard cap reached")) return "The ICO hard cap (90,000 ETH) has been reached."
     if (msg.includes("Pausable: paused") || msg.includes("EnforcedPause")) {

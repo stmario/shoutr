@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ethers } from "ethers"
-import { Coins, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import { ShotTokenLogo } from "@/components/shot-token-logo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,11 +50,11 @@ export function IcoSidebar() {
   }
 
   return (
-    <aside className="hidden xl:flex w-[22rem] shrink-0 flex-col gap-4 p-4 border-l border-border sticky top-0 h-screen overflow-y-auto">
+    <aside className="sticky top-0 z-20 hidden h-svh max-h-svh w-[22rem] shrink-0 self-start flex-col gap-4 overflow-y-auto border-l border-border p-4 xl:flex">
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Coins className="h-5 w-5 text-purple-700" />
+            <ShotTokenLogo size={24} />
             <CardTitle className="text-lg">SHOT token sale</CardTitle>
           </div>
           <CardDescription>Buy SHOT with ETH on Sepolia</CardDescription>

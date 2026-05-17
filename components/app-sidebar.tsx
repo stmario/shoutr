@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -27,7 +26,7 @@ import { MobileMenu } from "./mobile-menu"
 import { LogoutButton } from "./logout-button"
 import { UnreadDot } from "./unread-dot"
 import { ShoutrLogo } from "./shoutr-logo"
-
+import { ShotTokenLogo } from "./shot-token-logo"
 const navItems = [
   { icon: Home, label: "Home", href: "/" },
   { icon: Search, label: "Explore", href: "/explore" },
@@ -50,9 +49,7 @@ export async function AppSidebar() {
   return (
     <>
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-3 bg-background/80 backdrop-blur-sm border-b">
-        <Link href="/">
-          <ShoutrLogo priority />
-        </Link>
+        <ShoutrLogo priority />
         <MobileMenu
           user={user}
           hasUnreadNotifications={hasUnreadNotifications}
@@ -60,13 +57,12 @@ export async function AppSidebar() {
         />
       </div>
 
-      <Sidebar className="hidden md:flex">
+      <Sidebar
+        collapsible="none"
+        className="sticky top-0 z-20 hidden h-svh max-h-svh shrink-0 self-start overflow-hidden border-r border-border md:flex"
+      >
         <SidebarHeader className="p-4">
-          <div className="flex items-center gap-2">
-            <Link href="/">
-              <ShoutrLogo wordmarkClassName="text-xl font-bold hidden md:inline-block" />
-            </Link>
-          </div>
+          <ShoutrLogo wordmarkClassName="text-xl font-bold" priority />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
@@ -78,7 +74,11 @@ export async function AppSidebar() {
                     className="flex items-center gap-4 relative"
                   >
                     <div className="relative">
-                      <item.icon className="h-5 w-5" />
+                      {item.label === "Staking" ? (
+                        <ShotTokenLogo size={20} linkToCoinMarketCap={false} />
+                      ) : (
+                        <item.icon className="h-5 w-5" />
+                      )}
                       {item.hasBadge === "notifications" && hasUnreadNotifications && <UnreadDot />}
                       {item.hasBadge === "messages" && unreadMessageCount > 0 && (
                         <div className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-700 text-[10px] font-medium text-white">
@@ -97,7 +97,7 @@ export async function AppSidebar() {
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-          <div className="px-4 mt-4 hidden md:block">
+          <div className="px-4 mt-4">
             <Button asChild className="w-full bg-purple-700 hover:bg-purple-800 text-white">
               <Link href="/compose">
                 <PenSquare className="mr-2 h-4 w-4" />
@@ -122,7 +122,7 @@ export async function AppSidebar() {
                     <div className="text-sm font-medium">{user?.username || "Guest"}</div>
                     <div className="text-xs text-muted-foreground">{user ? `@${user.username}` : "Not signed in"}</div>
                   </div>
-                  <MoreHorizontal className="ml-auto h-4 w-4 hidden md:block" />
+                  <MoreHorizontal className="ml-auto h-4 w-4" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -153,7 +153,6 @@ export async function AppSidebar() {
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarFooter>
-        <SidebarRail />
       </Sidebar>
     </>
   )
