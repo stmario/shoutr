@@ -3,13 +3,14 @@ import { ShoutList } from "@/components/shout-list"
 import { HomeFeed } from "@/components/home-feed"
 import { getCurrentUser } from "@/lib/auth"
 import { Skeleton } from "@/components/ui/skeleton"
+import { timelinePageHeaderClass } from "@/lib/timeline-styles"
 
 export default async function Home() {
   const user = await getCurrentUser()
 
   return (
     <div className="flex flex-col">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b p-4">
+      <header className={timelinePageHeaderClass}>
         <h1 className="text-xl font-bold">Home</h1>
       </header>
 
@@ -37,7 +38,7 @@ export default async function Home() {
             </div>
           }
         >
-          <ShoutList />
+          <ShoutList variant="timeline" />
         </Suspense>
       )}
     </div>

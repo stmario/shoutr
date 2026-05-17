@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { getUserShouts } from "@/app/actions/profile"
 import { getShouts, type Shout } from "@/app/actions/shouts"
+import { timelineLoadMoreClass } from "@/lib/timeline-styles"
 
 interface ShoutListProps {
   initialShouts?: Shout[]
@@ -13,6 +14,7 @@ interface ShoutListProps {
   profileId?: number
   /** Increment to refetch the first page (e.g. after posting a shout). */
   refreshKey?: number
+  variant?: "card" | "timeline"
 }
 
 function mergeUniqueShouts(existing: Shout[], incoming: Shout[]) {
@@ -21,7 +23,13 @@ function mergeUniqueShouts(existing: Shout[], incoming: Shout[]) {
   return [...existing, ...unique]
 }
 
-export function ShoutList({ initialShouts = [], userId, profileId, refreshKey = 0 }: ShoutListProps) {
+export function ShoutList({
+  initialShouts = [],
+  userId,
+  profileId,
+  refreshKey = 0,
+  variant = "card",
+}: ShoutListProps) {
   const [shouts, setShouts] = useState(initialShouts)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
@@ -80,38 +88,51 @@ export function ShoutList({ initialShouts = [], userId, profileId, refreshKey = 
 
   if (shouts.length === 0 && !loading) {
     return (
-      <div className="text-center py-10">
+      <div className={variant === "timeline" ? "px-4 py-10 text-center" : "py-10 text-center"}>
         <p className="text-muted-foreground">No shouts to display.</p>
         {!profileId && <p className="text-muted-foreground">Follow users or create your first shout!</p>}
       </div>
     )
   }
 
+  const listContent = shouts.map((shout) => (
+    <ShoutCard
+      key={shout.id}
+      variant={variant}
+      shout={shout}
+      currentUserId={userId}
+      onDeleted={() => setShouts((prev) => prev.filter((s) => s.id !== shout.id))}
+    />
+  ))
+
+  const loadMore = hasMore ? (
+    <div className={variant === "timeline" ? timelineLoadMoreClass : "flex justify-center py-4"}>
+      <Button variant="outline" onClick={loadMoreShouts} disabled={loading}>
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading...
+          </>
+        ) : (
+          "Load More"
+        )}
+      </Button>
+    </div>
+  ) : null
+
+  if (variant === "timeline") {
+    return (
+      <>
+        {listContent}
+        {loadMore}
+      </>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      {shouts.map((shout) => (
-        <ShoutCard
-          key={shout.id}
-          shout={shout}
-          currentUserId={userId}
-          onDeleted={() => setShouts((prev) => prev.filter((s) => s.id !== shout.id))}
-        />
-      ))}
-
-      {hasMore && (
-        <div className="flex justify-center py-4">
-          <Button variant="outline" onClick={loadMoreShouts} disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              "Load More"
-            )}
-          </Button>
-        </div>
-      )}
+      {listContent}
+      {loadMore}
     </div>
   )
 }

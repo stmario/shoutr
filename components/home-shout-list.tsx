@@ -5,6 +5,7 @@ import { ShoutCard } from "@/components/shout-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { getHomeFeed, type FeedItem, type Shout } from "@/app/actions/shouts"
+import { timelineLoadMoreClass, timelineSectionHeadingClass } from "@/lib/timeline-styles"
 
 interface HomeShoutListProps {
   userId: number
@@ -107,7 +108,7 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
 
   if (isEmpty) {
     return (
-      <div className="text-center py-10 px-4">
+      <div className="px-4 py-10 text-center">
         <p className="text-muted-foreground">No shouts to display.</p>
         <p className="text-muted-foreground">Follow users or create your first shout!</p>
       </div>
@@ -115,15 +116,14 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
   }
 
   return (
-    <div className="space-y-6 px-4 py-4">
+    <>
       {following.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            From people you follow
-          </h2>
+        <section>
+          <h2 className={timelineSectionHeadingClass}>From people you follow</h2>
           {following.map((item) => (
             <ShoutCard
               key={feedItemKey(item)}
+              variant="timeline"
               shout={item.shout}
               currentUserId={userId}
               reshoutedBy={item.reshouted_by}
@@ -136,13 +136,12 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
       )}
 
       {discover.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Popular from others
-          </h2>
+        <section>
+          <h2 className={timelineSectionHeadingClass}>Popular from others</h2>
           {discover.map((shout) => (
             <ShoutCard
               key={`d-${shout.id}`}
+              variant="timeline"
               shout={shout}
               currentUserId={userId}
               onDeleted={() => setDiscover((prev) => prev.filter((s) => s.id !== shout.id))}
@@ -152,7 +151,7 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
       )}
 
       {(hasMoreFollowing || hasMoreDiscover) && (
-        <div className="flex justify-center py-4">
+        <div className={timelineLoadMoreClass}>
           <Button variant="outline" onClick={loadMore} disabled={loading}>
             {loading ? (
               <>
@@ -165,6 +164,6 @@ export function HomeShoutList({ userId, refreshKey = 0 }: HomeShoutListProps) {
           </Button>
         </div>
       )}
-    </div>
+    </>
   )
 }

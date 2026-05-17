@@ -15,13 +15,12 @@ export function HomeFeed({ userId, username, avatarUrl }: HomeFeedProps) {
 
   return (
     <>
-      <div className="border-b p-4">
-        <ComposeShout
-          username={username}
-          avatarUrl={avatarUrl}
-          onShoutCreated={() => setRefreshKey((k) => k + 1)}
-        />
-      </div>
+      <ComposeShout
+        variant="timeline"
+        username={username}
+        avatarUrl={avatarUrl}
+        onShoutCreated={() => setRefreshKey((k) => k + 1)}
+      />
       <HomeShoutList userId={userId} refreshKey={refreshKey} />
     </>
   )

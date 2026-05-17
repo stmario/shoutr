@@ -24,6 +24,8 @@ import { ShoutContent } from "@/components/shout-content"
 import { ShoutEmbeddedImage } from "@/components/shout-embedded-image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { formatLikeWeightShot, LIKE_CURRENCY } from "@/lib/like-weight"
+import { timelineRowClass } from "@/lib/timeline-styles"
+import { cn } from "@/lib/utils"
 
 interface ShoutCardProps {
   shout: {
@@ -46,6 +48,8 @@ interface ShoutCardProps {
   reshoutedBy?: ReshoutedBy
   onBookmarkChange?: (bookmarked: boolean) => void
   onDeleted?: () => void
+  /** Full-width rows with shared dividers (home feed). */
+  variant?: "card" | "timeline"
 }
 
 export function ShoutCard({
@@ -57,6 +61,7 @@ export function ShoutCard({
   reshoutedBy,
   onBookmarkChange,
   onDeleted,
+  variant = "card",
 }: ShoutCardProps) {
   const initialTotal = shout.vote_count?.toString() ?? "0"
   const [likeTotalWei, setLikeTotalWei] = useState(initialTotal)
@@ -262,7 +267,13 @@ export function ShoutCard({
   }
 
   return (
-    <Card className="border-b border-x-0 rounded-none first:border-t-0 last:border-b-0 md:border md:rounded-lg">
+    <Card
+      className={cn(
+        variant === "timeline"
+          ? timelineRowClass
+          : "border-b border-x-0 rounded-none first:border-t-0 last:border-b-0 md:border md:rounded-lg",
+      )}
+    >
       {reshoutedBy && (
         <div className="px-4 pt-3 pb-0 flex items-center gap-2 text-sm text-muted-foreground">
           <Repeat className="h-4 w-4 shrink-0 text-green-600" />

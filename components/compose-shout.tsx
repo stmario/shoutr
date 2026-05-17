@@ -11,14 +11,17 @@ import { ImageIcon, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
 import { useToast } from "@/hooks/use-toast"
 import { ShoutImageAttachmentPanel, useShoutImageAttachment } from "@/components/shout-image-attachment"
+import { timelineRowClass } from "@/lib/timeline-styles"
+import { cn } from "@/lib/utils"
 
 interface ComposeShoutProps {
   username: string
   avatarUrl?: string | null
   onShoutCreated?: () => void
+  variant?: "card" | "timeline"
 }
 
-export function ComposeShout({ username, avatarUrl, onShoutCreated }: ComposeShoutProps) {
+export function ComposeShout({ username, avatarUrl, onShoutCreated, variant = "card" }: ComposeShoutProps) {
   const showName = username?.trim() || "User"
   const showHandle = username?.trim() || "user"
 
@@ -83,7 +86,13 @@ export function ComposeShout({ username, avatarUrl, onShoutCreated }: ComposeSho
   const busy = isSubmitting
 
   return (
-    <Card className="border-b border-x-0 rounded-none md:border md:rounded-lg mb-4">
+    <Card
+      className={cn(
+        variant === "timeline"
+          ? timelineRowClass
+          : "mb-4 rounded-none border-x-0 border-b md:rounded-lg md:border",
+      )}
+    >
       <CardContent className="p-4">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10">
