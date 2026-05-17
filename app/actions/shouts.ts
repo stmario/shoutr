@@ -17,6 +17,7 @@ export type Shout = {
   username: string
   avatar_url: string | null
   wallet_address: string | null
+  author_is_verified: boolean
   vote_count: number | string
   comments_count: number
   reshouts_count: number
@@ -26,6 +27,7 @@ export type ReshoutedBy = {
   id: number
   username: string
   avatar_url: string | null
+  is_verified: boolean
   created_at: string
 }
 
@@ -46,6 +48,7 @@ const SHOUT_SELECT = `
     u.username,
     u.avatar_url,
     u.wallet_address,
+    COALESCE(u.is_verified, false) as author_is_verified,
     s.like_count::text as vote_count,
     (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
     (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count
@@ -68,6 +71,8 @@ function normalizeShoutRow(row: Record<string, unknown>): Shout {
     username: String(row.username),
     avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
     wallet_address: row.wallet_address != null ? String(row.wallet_address) : null,
+    author_is_verified:
+      row.author_is_verified === true || row.author_is_verified === "t" || row.author_is_verified === "true",
     vote_count: row.vote_count != null ? String(row.vote_count) : "0",
     comments_count: Number(row.comments_count ?? 0),
     reshouts_count: Number(row.reshouts_count ?? 0),
@@ -87,6 +92,10 @@ function normalizeFeedRow(row: Record<string, unknown>): FeedItem {
         id: Number(row.reshouter_id),
         username: String(row.reshouter_username),
         avatar_url: row.reshouter_avatar_url != null ? String(row.reshouter_avatar_url) : null,
+        is_verified:
+          row.reshouter_is_verified === true ||
+          row.reshouter_is_verified === "t" ||
+          row.reshouter_is_verified === "true",
         created_at: String(row.reshout_at ?? row.sort_at),
       },
     }
@@ -109,6 +118,7 @@ async function getFollowingFeed(userId: number, limit: number, offset: number): 
         NULL::integer AS reshouter_id,
         NULL::text AS reshouter_username,
         NULL::text AS reshouter_avatar_url,
+        false AS reshouter_is_verified,
         NULL::timestamptz AS reshout_at,
         s.id,
         s.content,
@@ -118,6 +128,7 @@ async function getFollowingFeed(userId: number, limit: number, offset: number): 
         u.username,
         u.avatar_url,
         u.wallet_address,
+        COALESCE(u.is_verified, false) AS author_is_verified,
         s.like_count::text AS vote_count,
         (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) AS comments_count,
         (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) AS reshouts_count
@@ -137,6 +148,7 @@ async function getFollowingFeed(userId: number, limit: number, offset: number): 
         ru.id AS reshouter_id,
         ru.username AS reshouter_username,
         ru.avatar_url AS reshouter_avatar_url,
+        COALESCE(ru.is_verified, false) AS reshouter_is_verified,
         r.created_at AS reshout_at,
         s.id,
         s.content,
@@ -146,6 +158,7 @@ async function getFollowingFeed(userId: number, limit: number, offset: number): 
         u.username,
         u.avatar_url,
         u.wallet_address,
+        COALESCE(u.is_verified, false) AS author_is_verified,
         s.like_count::text AS vote_count,
         (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) AS comments_count,
         (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) AS reshouts_count
@@ -684,6 +697,7 @@ export async function getUserLikedShouts(userId: number, limit = 10, offset = 0)
         u.username,
         u.avatar_url,
         u.wallet_address,
+        COALESCE(u.is_verified, false) as author_is_verified,
         s.like_count::text as vote_count,
         (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
         (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count

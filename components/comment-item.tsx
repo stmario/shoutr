@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import type { Comment } from "@/app/actions/comment-actions"
 import { ClientTime } from "@/components/client-time"
+import { UsernameDisplay } from "@/components/username-display"
 
 interface CommentItemProps {
   comment: Comment
@@ -31,9 +32,11 @@ export function CommentItem({ comment, currentUserId, onDelete, isDeleting }: Co
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <Link href={`/profile/${comment.username}`} className="font-semibold text-sm hover:underline">
-              @{comment.username}
-            </Link>
+            <UsernameDisplay
+              username={comment.username}
+              verified={comment.is_verified}
+              nameClassName="font-semibold text-sm"
+            />
             <ClientTime value={comment.created_at} className="text-muted-foreground text-xs ml-2" />
           </div>
           {isOwner && onDelete && (

@@ -5,6 +5,8 @@ import { normalizeAvatarUrl } from "@/lib/avatar-url"
 import { executeQuery } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
+import { validateUsernameForWallet } from "@/lib/ens-username-guard"
+import { refreshUserEnsVerified } from "@/lib/ens-verified"
 import { getUsersTableColumns, pickExistingColumns } from "@/lib/users-table-columns"
 
 export interface ProfileSettings {
@@ -147,6 +149,13 @@ export async function updateAccountSettings(settings: AccountSettings) {
         return { success: false, message: "Username is already in use" }
       }
 
+      if (currentUser.wallet_address) {
+        const ensCheck = await validateUsernameForWallet(settings.username, currentUser.wallet_address)
+        if (!ensCheck.ok) {
+          return { success: false, message: ensCheck.message }
+        }
+      }
+
       updates.push(`username = $${paramIndex}`)
       values.push(settings.username)
       paramIndex++
@@ -172,6 +181,11 @@ export async function updateAccountSettings(settings: AccountSettings) {
 
     const newUsername =
       (result[0] as { username?: string } | undefined)?.username ?? settings.username ?? currentUser.username
+
+    if (currentUser.wallet_address) {
+      await refreshUserEnsVerified(currentUser.id, newUsername, currentUser.wallet_address).catch(() => undefined)
+    }
+
     revalidatePath(`/profile/${newUsername}`)
     revalidatePath("/settings")
 

@@ -3,9 +3,10 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { ProfileHeader } from "@/components/profile-header"
 import { ShoutList } from "@/components/shout-list"
 import { ProfileReshoutList } from "@/components/profile-reshout-list"
-import { getProfileStakedShot, getUserProfile, getUserShouts } from "@/app/actions/profile"
+import { getProfileStakedShot, getUserProfile, getUserShouts, syncProfileEnsVerified } from "@/app/actions/profile"
 import { getCurrentUser } from "@/app/actions/auth"
 import { notFound } from "next/navigation"
+import { BadgeCheck } from "lucide-react"
 
 interface ProfilePageProps {
   params: Promise<{
@@ -23,6 +24,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const currentUser = await getCurrentUser()
   const isCurrentUser = currentUser?.id === profile.id
+  const displayProfile = await syncProfileEnsVerified(profile, currentUser?.id ?? null)
 
   const [userShouts, stakedShot] = await Promise.all([
     getUserShouts(profile.id, 10, 0),
@@ -34,12 +36,20 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <header className="sticky top-0 z-10 flex h-14 items-center border-b bg-background/95 backdrop-blur">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="md:hidden" />
-          <h1 className="text-xl font-bold">{profile.username}</h1>
+          <h1 className="text-xl font-bold inline-flex items-center gap-1.5">
+            {displayProfile.username}
+            {displayProfile.is_verified ? (
+              <BadgeCheck
+                className="h-5 w-5 shrink-0 fill-sky-500 text-white dark:text-background"
+                aria-label="ENS verified"
+              />
+            ) : null}
+          </h1>
         </div>
       </header>
 
       <div>
-        <ProfileHeader profile={profile} isCurrentUser={isCurrentUser} stakedShot={stakedShot} />
+        <ProfileHeader profile={displayProfile} isCurrentUser={isCurrentUser} stakedShot={stakedShot} />
 
         <Tabs defaultValue="shouts" className="mt-6">
           <TabsList className="w-full justify-start px-4 border-b rounded-none h-12">

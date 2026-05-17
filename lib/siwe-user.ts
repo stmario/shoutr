@@ -3,6 +3,8 @@ import { ethers } from "ethers"
 import { eq } from "drizzle-orm"
 import { db, executeQuery } from "./db"
 import { resolveEnsProfile, isAutoHolderUsername, type EnsProfile } from "./ens-profile"
+import { validateUsernameForWallet } from "./ens-username-guard"
+import { isUsernameEnsVerified, refreshUserEnsVerified } from "./ens-verified"
 import { getUsersTableColumns } from "./users-table-columns"
 import { requireChecksumAddress } from "./wallet-address"
 import { users } from "./schema"
@@ -30,11 +32,17 @@ async function isUsernameAvailable(username: string, excludeUserId?: number): Pr
   return existing.length === 0
 }
 
+async function isUsernameSelectable(username: string, checksumAddress: string, excludeUserId?: number) {
+  if (!(await isUsernameAvailable(username, excludeUserId))) return false
+  const ensCheck = await validateUsernameForWallet(username, checksumAddress)
+  return ensCheck.ok
+}
+
 async function pickUsername(checksumAddress: string, preferred?: string) {
   if (preferred) {
     let candidate = preferred
     for (let n = 0; n < 50; n++) {
-      if (await isUsernameAvailable(candidate)) return candidate
+      if (await isUsernameSelectable(candidate, checksumAddress)) return candidate
       candidate = n === 0 ? `${preferred}_ens` : `${preferred}_ens_${n}`
     }
   }
@@ -42,13 +50,18 @@ async function pickUsername(checksumAddress: string, preferred?: string) {
   const base = `holder_${checksumAddress.slice(2, 10).toLowerCase()}`
   let candidate = base
   for (let n = 0; n < 50; n++) {
-    if (await isUsernameAvailable(candidate)) return candidate
+    if (await isUsernameSelectable(candidate, checksumAddress)) return candidate
     candidate = `${base}_${n + 1}`
   }
   return `${base}_${randomUUID().slice(0, 8)}`
 }
 
-async function insertWalletUser(username: string, walletAddress: string, avatarUrl?: string | null) {
+async function insertWalletUser(
+  username: string,
+  walletAddress: string,
+  avatarUrl?: string | null,
+  ensVerified = false,
+) {
   const columns = await getUsersTableColumns()
   if (!columns.has("wallet_address")) {
     throw new Error("users.wallet_address column is required for wallet sign-up")
@@ -69,7 +82,7 @@ async function insertWalletUser(username: string, walletAddress: string, avatarU
   add("username", username)
   add("wallet_address", checksum)
   add("avatar_url", avatarUrl ?? null)
-  add("is_verified", true)
+  add("is_verified", ensVerified)
 
   if (!fields.includes("wallet_address")) {
     throw new Error("wallet_address must be set on sign-up")
@@ -125,14 +138,16 @@ async function applyEnsProfileToUser(
     }
   }
 
-  if (updates.length === 0) return nextUsername
+  if (updates.length > 0) {
+    if (columns.has("updated_at")) {
+      updates.push("updated_at = CURRENT_TIMESTAMP")
+    }
 
-  if (columns.has("updated_at")) {
-    updates.push("updated_at = CURRENT_TIMESTAMP")
+    values.push(userId)
+    await executeQuery(`UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values)
   }
 
-  values.push(userId)
-  await executeQuery(`UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}`, values)
+  await refreshUserEnsVerified(userId, nextUsername, checksumAddress).catch(() => undefined)
   return nextUsername
 }
 
@@ -143,7 +158,10 @@ async function syncEnsProfileForUser(
 ): Promise<string> {
   try {
     const ens = await resolveEnsProfile(checksumAddress)
-    if (!ens) return username
+    if (!ens) {
+      await refreshUserEnsVerified(userId, username, checksumAddress).catch(() => undefined)
+      return username
+    }
     return await applyEnsProfileToUser(userId, username, checksumAddress, ens)
   } catch (err) {
     console.warn("ENS profile sync failed:", err instanceof Error ? err.message : err)
@@ -197,9 +215,10 @@ export async function findOrCreateSiweUser(walletAddress: string): Promise<SiweU
   const ens = await resolveEnsProfile(address).catch(() => null)
   const username = await pickUsername(address, ens?.username)
   const avatarUrl = ens?.avatarUrl ?? null
+  const ensVerified = await isUsernameEnsVerified(username, address)
 
   try {
-    const row = await insertWalletUser(username, address, avatarUrl)
+    const row = await insertWalletUser(username, address, avatarUrl, ensVerified)
     return { id: row.id, username: row.username, email }
   } catch (err: unknown) {
     const code = typeof err === "object" && err !== null && "code" in err ? String((err as { code: string }).code) : ""

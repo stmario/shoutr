@@ -2,6 +2,7 @@
 
 import { executeQuery } from "@/lib/db"
 import { formatLikeWeightShot } from "@/lib/like-weight"
+import { refreshUserEnsVerified } from "@/lib/ens-verified"
 import { getStakedBalance } from "@/lib/staking-read"
 import { getCurrentUser } from "./auth"
 
@@ -16,6 +17,29 @@ export type ProfileUser = {
   following_count: number
   shouts_count: number
   is_following: boolean
+  is_verified: boolean
+}
+
+/** ENS verified for display (DB flag or live reverse-ENS match). */
+export async function resolveProfileEnsVerified(profile: ProfileUser): Promise<boolean> {
+  if (profile.is_verified) return true
+  if (!profile.wallet_address) return false
+  const { isUsernameEnsVerified } = await import("@/lib/ens-verified")
+  return isUsernameEnsVerified(profile.username, profile.wallet_address)
+}
+
+/** Re-check ENS on own profile and persist when the cached flag is stale. */
+export async function syncProfileEnsVerified(
+  profile: ProfileUser,
+  viewerUserId: number | null,
+): Promise<ProfileUser> {
+  const verified = await resolveProfileEnsVerified(profile)
+
+  if (viewerUserId === profile.id && profile.wallet_address && verified !== profile.is_verified) {
+    await refreshUserEnsVerified(profile.id, profile.username, profile.wallet_address).catch(() => undefined)
+  }
+
+  return { ...profile, is_verified: verified }
 }
 
 /** Live staked SHOT for a profile wallet (e.g. "1,250 SHOT"). */
@@ -44,6 +68,7 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
         u.bio, 
         u.avatar_url,
         u.wallet_address,
+        COALESCE(u.is_verified, false) as is_verified,
         u.created_at,
         (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as followers_count,
         (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as following_count,
@@ -67,7 +92,11 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
       return null
     }
 
-    return result[0] as ProfileUser
+    const row = result[0] as Record<string, unknown>
+    return {
+      ...(row as ProfileUser),
+      is_verified: row.is_verified === true || row.is_verified === "t" || row.is_verified === "true",
+    }
   } catch (error) {
     console.error("Error fetching user profile:", error)
     return null
@@ -121,6 +150,7 @@ export async function getUserShouts(userId: number, limit = 10, offset = 0) {
         u.username,
         u.avatar_url,
         u.wallet_address,
+        COALESCE(u.is_verified, false) as author_is_verified,
         s.like_count as vote_count,
         (SELECT COUNT(*) FROM comments WHERE shout_id = s.id) as comments_count,
         (SELECT COUNT(*) FROM reshouts WHERE shout_id = s.id) as reshouts_count

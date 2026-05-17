@@ -13,6 +13,7 @@ export type Comment = {
   user_id: number
   username: string
   avatar_url: string | null
+  is_verified: boolean
 }
 
 function normalizeComment(row: Record<string, unknown>): Comment {
@@ -23,6 +24,7 @@ function normalizeComment(row: Record<string, unknown>): Comment {
     user_id: Number(row.user_id),
     username: String(row.username),
     avatar_url: row.avatar_url != null ? String(row.avatar_url) : null,
+    is_verified: row.is_verified === true || row.is_verified === "t" || row.is_verified === "true",
   }
 }
 
@@ -50,7 +52,8 @@ export async function getCommentsForShout(shoutId: number): Promise<Comment[]> {
         c.created_at,
         c.user_id,
         u.username,
-        u.avatar_url
+        u.avatar_url,
+        COALESCE(u.is_verified, false) as is_verified
       FROM comments c
       INNER JOIN users u ON c.user_id = u.id
       WHERE c.shout_id = $1

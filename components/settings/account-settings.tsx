@@ -98,7 +98,9 @@ export function AccountSettings({ user }: AccountSettingsProps) {
               <Label htmlFor="username">Username</Label>
               <Input id="username" name="username" value={formData.username} onChange={handleChange} required />
               <p className="text-sm text-muted-foreground">
-                This is your public username that appears in your profile URL.
+                This is your public username that appears in your profile URL. Names already registered on ENS to
+                another wallet cannot be used. A verified badge appears when your username matches your wallet&apos;s
+                primary ENS name.
               </p>
             </div>
 

@@ -17,6 +17,7 @@ export type Notification = {
   actor_id: number
   actor_username: string
   actor_avatar_url: string | null
+  actor_is_verified: boolean
   shout_id?: number
   shout_content?: string
   comment_id?: number
@@ -46,6 +47,7 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
         actor_id: notifications.actor_id,
         actor_username: actorUser.username,
         actor_avatar_url: actorUser.avatar_url,
+        actor_is_verified: actorUser.is_verified,
         shout_id: notifications.shout_id,
         shout_content: shouts.content,
         comment_id: notifications.comment_id,
@@ -68,6 +70,7 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
       ...row,
       shout_content: row.shout_content ?? row.deleted_shout_content ?? undefined,
       is_read: row.is_read === true || row.is_read === "t" || row.is_read === "true",
+      actor_is_verified: row.actor_is_verified === true,
     }))
   } catch (error) {
     console.error("Error fetching notifications:", error)

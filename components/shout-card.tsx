@@ -24,6 +24,7 @@ import { ShoutContent } from "@/components/shout-content"
 import { ShoutEmbeddedImage } from "@/components/shout-embedded-image"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { formatLikeWeightShot, LIKE_CURRENCY } from "@/lib/like-weight"
+import { UsernameDisplay } from "@/components/username-display"
 import { timelineRowClass } from "@/lib/timeline-styles"
 import { cn } from "@/lib/utils"
 
@@ -37,6 +38,7 @@ interface ShoutCardProps {
     username: string
     avatar_url?: string
     wallet_address?: string | null
+    author_is_verified?: boolean
     vote_count: number | string
     comments_count: number
     reshouts_count: number
@@ -297,18 +299,22 @@ export function ShoutCard({
             {shout.wallet_address ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link href={`/profile/${shout.username}`} className="font-semibold hover:underline">
-                    @{shout.username}
-                  </Link>
+                  <UsernameDisplay
+                    username={shout.username}
+                    verified={shout.author_is_verified}
+                    nameClassName="font-semibold"
+                  />
                 </TooltipTrigger>
                 <TooltipContent className="font-mono text-xs max-w-xs break-all">
                   {shout.wallet_address}
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <Link href={`/profile/${shout.username}`} className="font-semibold hover:underline">
-                @{shout.username}
-              </Link>
+              <UsernameDisplay
+                username={shout.username}
+                verified={shout.author_is_verified}
+                nameClassName="font-semibold"
+              />
             )}
             <span className="text-muted-foreground text-sm">·</span>
             <ClientTime value={shout.created_at} className="text-muted-foreground text-sm" />

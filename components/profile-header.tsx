@@ -6,6 +6,7 @@ import { FollowButton } from "@/components/follow-button"
 import { MessageButton } from "@/components/message-button"
 import type { ProfileUser } from "@/app/actions/profile"
 import { formatDate } from "@/lib/utils"
+import { UsernameDisplay } from "@/components/username-display"
 
 interface ProfileHeaderProps {
   profile: ProfileUser
@@ -54,8 +55,14 @@ export function ProfileHeader({ profile, isCurrentUser, stakedShot }: ProfileHea
         </div>
 
         <div className="mt-16 pb-4">
-          <h1 className="text-2xl font-bold">{profile.username}</h1>
-          <p className="text-muted-foreground">@{profile.username}</p>
+          <h1 className="text-2xl font-bold">
+            <UsernameDisplay
+              username={profile.username}
+              verified={profile.is_verified}
+              asLink={false}
+              nameClassName="text-2xl font-bold"
+            />
+          </h1>
 
           {profile.bio && <p className="mt-3">{profile.bio}</p>}
 

@@ -4,6 +4,7 @@ import { ClientTime } from "@/components/client-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert } from "lucide-react"
 import Link from "next/link"
+import { UsernameDisplay } from "@/components/username-display"
 
 interface NotificationItemProps {
   notification: {
@@ -14,6 +15,7 @@ interface NotificationItemProps {
     actor_id: number
     actor_username: string
     actor_avatar_url?: string
+    actor_is_verified?: boolean
     shout_id?: number
     shout_content?: string
     comment_id?: number
@@ -44,33 +46,43 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     }
   }
 
+  const actorName = (
+    <UsernameDisplay
+      username={notification.actor_username}
+      verified={notification.actor_is_verified}
+      showAt={false}
+      asLink={false}
+      nameClassName="font-semibold"
+    />
+  )
+
   const renderContent = () => {
     switch (notification.type) {
       case "like":
         return (
           <>
-            <span className="font-semibold">{notification.actor_username}</span>
+            {actorName}
             <span className="text-muted-foreground"> liked your shout</span>
           </>
         )
       case "vote":
         return (
           <>
-            <span className="font-semibold">{notification.actor_username}</span>
+            {actorName}
             <span className="text-muted-foreground"> voted on your shout</span>
           </>
         )
       case "follow":
         return (
           <>
-            <span className="font-semibold">{notification.actor_username}</span>
+            {actorName}
             <span className="text-muted-foreground"> followed you</span>
           </>
         )
       case "comment":
         return (
           <>
-            <span className="font-semibold">{notification.actor_username}</span>
+            {actorName}
             <span className="text-muted-foreground"> commented on your shout</span>
             {notification.comment_content && (
               <p className="text-sm text-muted-foreground line-clamp-1 mt-1">"{notification.comment_content}"</p>
@@ -80,14 +92,14 @@ export function NotificationItem({ notification }: NotificationItemProps) {
       case "reshout":
         return (
           <>
-            <span className="font-semibold">{notification.actor_username}</span>
+            {actorName}
             <span className="text-muted-foreground"> reshouted your post</span>
           </>
         )
       case "message":
         return (
           <>
-            <span className="font-semibold">{notification.actor_username}</span>
+            {actorName}
             <span className="text-muted-foreground"> sent you a message</span>
           </>
         )
@@ -95,7 +107,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         return (
           <div className="flex flex-col gap-1">
             <div>
-              <span className="font-semibold">{notification.actor_username}</span>
+              {actorName}
               <span className="text-muted-foreground"> removed your shout</span>
             </div>
             <p className="text-sm text-muted-foreground">
