@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
-import { moderateDeleteShout } from "@/app/actions/shout-delete-actions"
+import { deleteOwnShout, moderateDeleteShout } from "@/app/actions/shout-delete-actions"
 import {
   MAX_DELETE_REASON_LENGTH,
   MIN_DELETE_REASON_LENGTH,
@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast"
 type DeleteShoutDialogProps = {
   shoutId: number
   authorUsername: string
+  mode: "own" | "moderation"
   open: boolean
   onOpenChange: (open: boolean) => void
   onDeleted?: () => void
@@ -32,6 +33,7 @@ type DeleteShoutDialogProps = {
 export function DeleteShoutDialog({
   shoutId,
   authorUsername,
+  mode,
   open,
   onOpenChange,
   onDeleted,
@@ -40,10 +42,14 @@ export function DeleteShoutDialog({
   const [isDeleting, setIsDeleting] = useState(false)
   const { toast } = useToast()
 
+  const isOwn = mode === "own"
+
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      const result = await moderateDeleteShout(shoutId, reason)
+      const result = isOwn
+        ? await deleteOwnShout(shoutId)
+        : await moderateDeleteShout(shoutId, reason)
 
       if (!result.success) {
         toast({
@@ -56,7 +62,7 @@ export function DeleteShoutDialog({
 
       toast({
         title: "Shout deleted",
-        description: `Removed @${authorUsername}'s shout.`,
+        description: isOwn ? "Your shout was removed." : `Removed @${authorUsername}'s shout.`,
       })
       setReason("")
       onOpenChange(false)
@@ -77,33 +83,36 @@ export function DeleteShoutDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete shout</AlertDialogTitle>
+          <AlertDialogTitle>{isOwn ? "Delete your shout?" : "Delete shout"}</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes @{authorUsername}&apos;s shout. You must have at least 10,000 SHOT
-            staked and more stake than the author. Provide a clear reason for the deletion.
+            {isOwn
+              ? "This permanently removes your shout. This cannot be undone."
+              : `This permanently removes @${authorUsername}'s shout. You must have at least 10,000 SHOT staked and more stake than the author. Provide a clear reason for the deletion.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="space-y-2 py-2">
-          <Label htmlFor={`delete-reason-${shoutId}`}>Reason for deletion</Label>
-          <Textarea
-            id={`delete-reason-${shoutId}`}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Explain why this shout is being removed…"
-            rows={4}
-            maxLength={MAX_DELETE_REASON_LENGTH}
-            disabled={isDeleting}
-          />
-          <p className="text-xs text-muted-foreground">
-            {reason.trim().length}/{MAX_DELETE_REASON_LENGTH} characters (min {MIN_DELETE_REASON_LENGTH})
-          </p>
-        </div>
+        {!isOwn && (
+          <div className="space-y-2 py-2">
+            <Label htmlFor={`delete-reason-${shoutId}`}>Reason for deletion</Label>
+            <Textarea
+              id={`delete-reason-${shoutId}`}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Explain why this shout is being removed…"
+              rows={4}
+              maxLength={MAX_DELETE_REASON_LENGTH}
+              disabled={isDeleting}
+            />
+            <p className="text-xs text-muted-foreground">
+              {reason.trim().length}/{MAX_DELETE_REASON_LENGTH} characters (min {MIN_DELETE_REASON_LENGTH})
+            </p>
+          </div>
+        )}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isDeleting || reason.trim().length < MIN_DELETE_REASON_LENGTH}
+            disabled={isDeleting || (!isOwn && reason.trim().length < MIN_DELETE_REASON_LENGTH)}
           >
             {isDeleting ? (
               <>

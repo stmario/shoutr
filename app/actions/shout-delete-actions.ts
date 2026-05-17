@@ -33,6 +33,54 @@ function revalidateShoutPaths(shoutId: number, authorUsername?: string) {
   }
 }
 
+async function removeShout(shoutId: number, authorUsername: string) {
+  await executeQuery(`DELETE FROM shouts WHERE id = $1`, [shoutId])
+  revalidateShoutPaths(shoutId, authorUsername)
+}
+
+export async function deleteOwnShout(
+  shoutId: number,
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const currentUser = await getCurrentUser()
+
+    if (!currentUser) {
+      return { success: false, message: "Sign in to delete your shout" }
+    }
+
+    const shoutRows = await executeQuery<{
+      id: number
+      user_id: number
+      username: string
+    }>(
+      `
+      SELECT s.id, s.user_id, u.username
+      FROM shouts s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.id = $1
+      `,
+      [shoutId],
+    )
+
+    if (shoutRows.length === 0) {
+      return { success: false, message: "Shout not found" }
+    }
+
+    const shout = shoutRows[0]
+
+    if (shout.user_id !== currentUser.id) {
+      return { success: false, message: "You can only delete your own shouts" }
+    }
+
+    await removeShout(shout.id, shout.username)
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error deleting own shout:", error)
+    return { success: false, message: "Failed to delete shout" }
+  }
+}
+
 export async function getShoutModerationDeleteEligibility(
   shoutId: number,
   options?: { authorWalletAddress?: string | null },
@@ -199,9 +247,7 @@ export async function moderateDeleteShout(
       })
     }
 
-    await executeQuery(`DELETE FROM shouts WHERE id = $1`, [shoutId])
-
-    revalidateShoutPaths(shoutId, shout.username)
+    await removeShout(shout.id, shout.username)
 
     return { success: true }
   } catch (error) {

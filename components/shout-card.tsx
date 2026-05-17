@@ -76,7 +76,9 @@ export function ShoutCard({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
 
-  const showModerationMenu = Boolean(currentUserId) && currentUserId !== shout.user_id
+  const isOwnShout = Boolean(currentUserId) && currentUserId === shout.user_id
+  const showModerationMenu = Boolean(currentUserId) && !isOwnShout
+  const showActionsMenu = Boolean(currentUserId) && (isOwnShout || showModerationMenu)
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -301,9 +303,9 @@ export function ShoutCard({
             <ClientTime value={shout.created_at} className="text-muted-foreground text-sm" />
           </div>
         </div>
-        {showModerationMenu && (
+        {showActionsMenu && (
           <>
-            <DropdownMenu onOpenChange={handleModerationMenuOpenChange}>
+            <DropdownMenu onOpenChange={isOwnShout ? undefined : handleModerationMenuOpenChange}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                   <MoreHorizontal className="h-4 w-4" />
@@ -313,9 +315,9 @@ export function ShoutCard({
               <DropdownMenuContent align="end" className="max-w-xs">
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  disabled={moderationCheckLoading || !canModerateDelete}
+                  disabled={!isOwnShout && (moderationCheckLoading || !canModerateDelete)}
                   onSelect={(event) => {
-                    if (moderationCheckLoading || !canModerateDelete) {
+                    if (!isOwnShout && (moderationCheckLoading || !canModerateDelete)) {
                       event.preventDefault()
                       return
                     }
@@ -323,9 +325,13 @@ export function ShoutCard({
                   }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {moderationCheckLoading ? "Checking stake…" : "Delete shout"}
+                  {isOwnShout
+                    ? "Delete shout"
+                    : moderationCheckLoading
+                      ? "Checking stake…"
+                      : "Delete shout"}
                 </DropdownMenuItem>
-                {!moderationCheckLoading && moderationMessage && !canModerateDelete && (
+                {!isOwnShout && !moderationCheckLoading && moderationMessage && !canModerateDelete && (
                   <p className="px-2 py-1.5 text-xs text-muted-foreground">{moderationMessage}</p>
                 )}
               </DropdownMenuContent>
@@ -333,6 +339,7 @@ export function ShoutCard({
             <DeleteShoutDialog
               shoutId={shout.id}
               authorUsername={shout.username}
+              mode={isOwnShout ? "own" : "moderation"}
               open={deleteDialogOpen}
               onOpenChange={setDeleteDialogOpen}
               onDeleted={onDeleted}
