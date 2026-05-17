@@ -365,39 +365,48 @@ export function ShoutCard({
         {shout.image_url ? <ShoutEmbeddedImage src={shout.image_url} /> : null}
       </CardContent>
       <CardFooter className="p-2 pl-[4.5rem] flex justify-between">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`${
-                liked ? "text-red-500" : "text-muted-foreground"
-              } hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950`}
-              onClick={handleLike}
-              disabled={!currentUserId || isLikeLoading}
-            >
-              <Heart className={`h-4 w-4 mr-1 ${liked ? "fill-red-500" : ""}`} />
-              <span className="text-xs font-medium">{likeDisplay}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {currentUserId ? (
-              liked ? (
-                <span>
-                  You liked with {formatLikeWeightShot(userLikeWeightWei)} staked
-                  {stakedLikePower ? ` · Current stake: ${stakedLikePower}` : ""}
-                </span>
+        <div className="flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 shrink-0 ${
+                  liked ? "text-red-500" : "text-muted-foreground"
+                } hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950`}
+                onClick={handleLike}
+                disabled={!currentUserId || isLikeLoading}
+                aria-label={liked ? "Unlike shout" : "Like shout"}
+              >
+                <Heart className={`h-4 w-4 ${liked ? "fill-red-500" : ""}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {currentUserId ? (
+                liked ? (
+                  <span>
+                    You liked with {formatLikeWeightShot(userLikeWeightWei)} staked
+                    {stakedLikePower ? ` · Current stake: ${stakedLikePower}` : ""}
+                  </span>
+                ) : (
+                  <span>
+                    Like with your staked {LIKE_CURRENCY}
+                    {stakedLikePower ? ` (${stakedLikePower} staked)` : ""}
+                  </span>
+                )
               ) : (
-                <span>
-                  Like with your staked {LIKE_CURRENCY}
-                  {stakedLikePower ? ` (${stakedLikePower} staked)` : ""}
-                </span>
-              )
-            ) : (
-              "Sign in to like"
-            )}
-          </TooltipContent>
-        </Tooltip>
+                "Sign in to like"
+              )}
+            </TooltipContent>
+          </Tooltip>
+          <span
+            className={`text-xs font-medium tabular-nums ${
+              liked && currentUserId ? "text-red-500" : "text-foreground"
+            }`}
+          >
+            {likeDisplay}
+          </span>
+        </div>
         <Button
           variant="ghost"
           size="sm"
