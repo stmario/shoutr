@@ -27,6 +27,10 @@ export function ShoutComments({ shoutId, initialComments, currentUserId }: Shout
     setComments((prev) => [...prev, comment])
   }
 
+  const removeCommentFromList = (commentId: number) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId))
+  }
+
   const handleDelete = async (commentId: number) => {
     setDeletingId(commentId)
     try {
@@ -39,7 +43,7 @@ export function ShoutComments({ shoutId, initialComments, currentUserId }: Shout
         })
         return
       }
-      setComments((prev) => prev.filter((c) => c.id !== commentId))
+      removeCommentFromList(commentId)
     } finally {
       setDeletingId(null)
     }
@@ -63,6 +67,7 @@ export function ShoutComments({ shoutId, initialComments, currentUserId }: Shout
               comment={comment}
               currentUserId={currentUserId}
               onDelete={handleDelete}
+              onModeratedDelete={removeCommentFromList}
               isDeleting={deletingId === comment.id}
             />
           ))}

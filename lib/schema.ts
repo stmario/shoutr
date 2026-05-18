@@ -127,6 +127,28 @@ export const shoutHashtags = pgTable(
   },
 )
 
+// Moderation deletion audit (comment row removed; snapshot kept here)
+export const commentDeletions = pgTable("comment_deletions", {
+  id: serial("id").primaryKey(),
+  comment_id: integer("comment_id").notNull(),
+  shout_id: integer("shout_id").notNull(),
+  author_id: integer("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  deleted_by_id: integer("deleted_by_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull().default(""),
+  author_weight_at_deletion: numeric("author_weight_at_deletion", { precision: 78, scale: 0 })
+    .default("0")
+    .notNull(),
+  deleter_weight_at_deletion: numeric("deleter_weight_at_deletion", { precision: 78, scale: 0 })
+    .default("0")
+    .notNull(),
+  reason: text("reason").notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+})
+
 // Moderation deletion audit (shout row removed; snapshot kept here)
 export const shoutDeletions = pgTable("shout_deletions", {
   id: serial("id").primaryKey(),
@@ -158,10 +180,13 @@ export const notifications = pgTable("notifications", {
   actor_id: integer("actor_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(), // like, reshout, follow, comment, mention, message, shout_deleted
+  type: text("type").notNull(), // like, reshout, follow, comment, mention, message, shout_deleted, comment_deleted
   shout_id: integer("shout_id").references(() => shouts.id, { onDelete: "cascade" }),
   comment_id: integer("comment_id").references(() => comments.id, { onDelete: "cascade" }),
   shout_deletion_id: integer("shout_deletion_id").references(() => shoutDeletions.id, {
+    onDelete: "set null",
+  }),
+  comment_deletion_id: integer("comment_deletion_id").references(() => commentDeletions.id, {
     onDelete: "set null",
   }),
   is_read: boolean("is_read").default(false).notNull(),

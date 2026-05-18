@@ -1,7 +1,7 @@
 "use server"
 
 import { db, executeQuery } from "@/lib/db"
-import { notifications, shouts, comments, users, shoutDeletions } from "@/lib/schema"
+import { notifications, shouts, comments, users, shoutDeletions, commentDeletions } from "@/lib/schema"
 import { eq, desc, and, sql, count } from "drizzle-orm"
 import { alias } from "drizzle-orm/pg-core"
 import { revalidatePath } from "next/cache"
@@ -23,6 +23,7 @@ export type Notification = {
   comment_id?: number
   comment_content?: string
   shout_deletion_id?: number
+  comment_deletion_id?: number
   deletion_reason?: string
 }
 
@@ -53,22 +54,35 @@ export async function getNotifications(limit = 20, offset = 0): Promise<Notifica
         comment_id: notifications.comment_id,
         comment_content: comments.content,
         shout_deletion_id: notifications.shout_deletion_id,
-        deletion_reason: shoutDeletions.reason,
+        comment_deletion_id: notifications.comment_deletion_id,
+        shout_deletion_reason: shoutDeletions.reason,
+        comment_deletion_reason: commentDeletions.reason,
         deleted_shout_content: shoutDeletions.content,
+        deleted_comment_content: commentDeletions.content,
       })
       .from(notifications)
       .innerJoin(actorUser, eq(notifications.actor_id, actorUser.id))
       .leftJoin(shouts, eq(notifications.shout_id, shouts.id))
       .leftJoin(comments, eq(notifications.comment_id, comments.id))
       .leftJoin(shoutDeletions, eq(notifications.shout_deletion_id, shoutDeletions.id))
+      .leftJoin(commentDeletions, eq(notifications.comment_deletion_id, commentDeletions.id))
       .where(eq(notifications.user_id, currentUser.id))
       .orderBy(desc(notifications.created_at))
       .limit(limit)
       .offset(offset)
 
-    return (result as (Notification & { deleted_shout_content?: string })[]).map((row) => ({
+    return (
+      result as (Notification & {
+        deleted_shout_content?: string
+        deleted_comment_content?: string
+        shout_deletion_reason?: string
+        comment_deletion_reason?: string
+      })[]
+    ).map((row) => ({
       ...row,
       shout_content: row.shout_content ?? row.deleted_shout_content ?? undefined,
+      comment_content: row.comment_content ?? row.deleted_comment_content ?? undefined,
+      deletion_reason: row.shout_deletion_reason ?? row.comment_deletion_reason ?? undefined,
       is_read: row.is_read === true || row.is_read === "t" || row.is_read === "true",
       actor_is_verified: row.actor_is_verified === true,
     }))
@@ -166,6 +180,7 @@ export async function createNotification({
   shoutId,
   commentId,
   shoutDeletionId,
+  commentDeletionId,
   vote_type: _voteType,
 }: {
   userId: number
@@ -174,6 +189,7 @@ export async function createNotification({
   shoutId?: number
   commentId?: number
   shoutDeletionId?: number
+  commentDeletionId?: number
   vote_type?: number
 }) {
   try {
@@ -194,6 +210,7 @@ export async function createNotification({
           shoutId ? eq(notifications.shout_id, shoutId) : sql`1=1`,
           commentId ? eq(notifications.comment_id, commentId) : sql`1=1`,
           shoutDeletionId ? eq(notifications.shout_deletion_id, shoutDeletionId) : sql`1=1`,
+          commentDeletionId ? eq(notifications.comment_deletion_id, commentDeletionId) : sql`1=1`,
         ),
       )
       .limit(1)
@@ -221,6 +238,7 @@ export async function createNotification({
         shout_id: shoutId,
         comment_id: commentId,
         shout_deletion_id: shoutDeletionId,
+        comment_deletion_id: commentDeletionId,
         is_read: false,
       })
       .returning()
