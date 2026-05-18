@@ -6,11 +6,14 @@ import { refreshUserEnsVerified } from "@/lib/ens-verified"
 import { getStakedBalance } from "@/lib/staking-read"
 import { getCurrentUser } from "./auth"
 import { areUsersBlockedPair } from "./block-actions"
+import { getUsersTableColumns } from "@/lib/users-table-columns"
 
 export type ProfileUser = {
   id: number
   username: string
   bio: string | null
+  location: string | null
+  website: string | null
   avatar_url: string | null
   wallet_address: string | null
   created_at: string
@@ -60,10 +63,19 @@ export async function getProfileStakedShot(walletAddress: string | null): Promis
   }
 }
 
+function optionalText(value: unknown): string | null {
+  if (value == null) return null
+  const s = String(value).trim()
+  return s.length > 0 ? s : null
+}
+
 export async function getUserProfile(username: string): Promise<ProfileUser | null> {
   try {
     const currentUser = await getCurrentUser()
     const currentUserId = currentUser?.id || null
+    const columns = await getUsersTableColumns()
+    const locationCol = columns.has("location") ? "u.location," : "NULL::text AS location,"
+    const websiteCol = columns.has("website") ? "u.website," : "NULL::text AS website,"
 
     const result = await executeQuery(
       `
@@ -71,6 +83,8 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
         u.id, 
         u.username, 
         u.bio, 
+        ${locationCol}
+        ${websiteCol}
         u.avatar_url,
         u.wallet_address,
         COALESCE(u.is_verified, false) as is_verified,
@@ -117,6 +131,9 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
     const bool = (v: unknown) => v === true || v === "t" || v === "true"
     return {
       ...(row as ProfileUser),
+      bio: optionalText(row.bio),
+      location: optionalText(row.location),
+      website: optionalText(row.website),
       is_verified: bool(row.is_verified),
       viewer_has_blocked: bool(row.viewer_has_blocked),
       profile_blocked_viewer: bool(row.profile_blocked_viewer),

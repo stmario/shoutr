@@ -16,9 +16,9 @@ export async function updateProfile(formData: FormData) {
       return { success: false, message: "You must be logged in to update your profile" }
     }
 
-    const bio = formData.get("bio") as string
-    const location = formData.get("location") as string
-    const website = formData.get("website") as string
+    const bio = String(formData.get("bio") ?? "").trim()
+    const location = String(formData.get("location") ?? "").trim()
+    const website = String(formData.get("website") ?? "").trim()
     const avatarRaw = formData.get("avatar_url")
     const avatar =
       avatarRaw === null

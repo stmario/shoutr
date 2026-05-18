@@ -37,6 +37,8 @@ export async function getCurrentUser() {
             id: users.id,
             username: users.username,
             bio: users.bio,
+            location: users.location,
+            website: users.website,
             avatar_url: users.avatar_url,
             wallet_address: users.wallet_address,
           })

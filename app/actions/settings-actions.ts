@@ -64,13 +64,13 @@ export async function updateProfileSettings(settings: ProfileSettings) {
 
     if (settings.location !== undefined && columns.has("location")) {
       updates.push(`location = $${paramIndex}`)
-      values.push(settings.location)
+      values.push(settings.location.trim() || null)
       paramIndex++
     }
 
     if (settings.website !== undefined && columns.has("website")) {
       updates.push(`website = $${paramIndex}`)
-      values.push(settings.website)
+      values.push(settings.website.trim() || null)
       paramIndex++
     }
 
