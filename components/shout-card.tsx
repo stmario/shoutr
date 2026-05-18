@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, MessageCircle, Repeat2, Bookmark, Repeat, MoreHorizontal, Trash2 } from "lucide-react"
+import { Heart, MessageCircle, Repeat2, Bookmark, Repeat, MoreHorizontal, Trash2, Link2 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DeleteShoutDialog } from "@/components/delete-shout-dialog"
@@ -85,7 +86,7 @@ export function ShoutCard({
 
   const isOwnShout = Boolean(currentUserId) && currentUserId === shout.user_id
   const showModerationMenu = Boolean(currentUserId) && !isOwnShout
-  const showActionsMenu = Boolean(currentUserId) && (isOwnShout || showModerationMenu)
+  const showDeleteInMenu = Boolean(currentUserId) && (isOwnShout || showModerationMenu)
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -113,6 +114,23 @@ export function ShoutCard({
 
     void checkStatus()
   }, [shout.id, currentUserId, initialIsBookmarked])
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/shout/${shout.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast({
+        title: "Link copied",
+        description: "Shout link copied to clipboard.",
+      })
+    } catch {
+      toast({
+        title: "Could not copy",
+        description: "Your browser blocked clipboard access.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleModerationMenuOpenChange = (open: boolean) => {
     if (!open || !showModerationMenu) return
@@ -320,16 +338,28 @@ export function ShoutCard({
             <ClientTime value={shout.created_at} className="text-muted-foreground text-sm" />
           </div>
         </div>
-        {showActionsMenu && (
-          <>
-            <DropdownMenu onOpenChange={isOwnShout ? undefined : handleModerationMenuOpenChange}>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Shout actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-w-xs">
+        <DropdownMenu
+          onOpenChange={showDeleteInMenu && !isOwnShout ? handleModerationMenuOpenChange : undefined}
+        >
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Shout actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-w-xs">
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault()
+                void handleCopyLink()
+              }}
+            >
+              <Link2 className="mr-2 h-4 w-4" />
+              Copy link
+            </DropdownMenuItem>
+            {showDeleteInMenu ? (
+              <>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   disabled={!isOwnShout && (moderationCheckLoading || !canModerateDelete)}
@@ -351,18 +381,20 @@ export function ShoutCard({
                 {!isOwnShout && !moderationCheckLoading && moderationMessage && !canModerateDelete && (
                   <p className="px-2 py-1.5 text-xs text-muted-foreground">{moderationMessage}</p>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DeleteShoutDialog
-              shoutId={shout.id}
-              authorUsername={shout.username}
-              mode={isOwnShout ? "own" : "moderation"}
-              open={deleteDialogOpen}
-              onOpenChange={setDeleteDialogOpen}
-              onDeleted={onDeleted}
-            />
-          </>
-        )}
+              </>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {showDeleteInMenu ? (
+          <DeleteShoutDialog
+            shoutId={shout.id}
+            authorUsername={shout.username}
+            mode={isOwnShout ? "own" : "moderation"}
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            onDeleted={onDeleted}
+          />
+        ) : null}
       </CardHeader>
       <CardContent className="p-4 pt-2 pl-[4.5rem]">
         {shout.content ? (
