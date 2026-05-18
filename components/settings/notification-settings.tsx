@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast"
 
 interface NotificationSettingsProps {
   initialSettings: {
-    push_notifications?: boolean
     mention_notifications?: boolean
     follow_notifications?: boolean
     like_notifications?: boolean
@@ -26,7 +25,6 @@ interface NotificationSettingsProps {
 
 export function NotificationSettings({ initialSettings }: NotificationSettingsProps) {
   const [settings, setSettings] = useState({
-    push_notifications: initialSettings?.push_notifications ?? true,
     mention_notifications: initialSettings?.mention_notifications ?? true,
     follow_notifications: initialSettings?.follow_notifications ?? true,
     like_notifications: initialSettings?.like_notifications ?? true,
@@ -78,7 +76,7 @@ export function NotificationSettings({ initialSettings }: NotificationSettingsPr
         <Card>
           <CardHeader>
             <CardTitle>Notification Preferences</CardTitle>
-            <CardDescription>Control what notifications you receive</CardDescription>
+            <CardDescription>Control what in-app notifications you receive</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
@@ -94,22 +92,6 @@ export function NotificationSettings({ initialSettings }: NotificationSettingsPr
             )}
 
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Delivery Methods</h3>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="push_notifications">Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive notifications on your device</p>
-                </div>
-                <Switch
-                  id="push_notifications"
-                  checked={settings.push_notifications}
-                  onCheckedChange={() => handleToggle("push_notifications")}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Notification Types</h3>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="mention_notifications">Mentions</Label>

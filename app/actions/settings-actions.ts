@@ -24,7 +24,6 @@ export interface AccountSettings {
 
 export interface NotificationSettings {
   email_notifications?: boolean
-  push_notifications?: boolean
   mention_notifications?: boolean
   follow_notifications?: boolean
   like_notifications?: boolean
@@ -219,7 +218,6 @@ export async function updateNotificationSettings(settings: NotificationSettings)
         `ALTER TABLE users 
          ADD COLUMN notification_settings JSONB DEFAULT '{
            "email_notifications": true,
-           "push_notifications": true,
            "mention_notifications": true,
            "follow_notifications": true,
            "like_notifications": true,
@@ -278,7 +276,6 @@ export async function getNotificationSettings() {
       // Return default settings if column doesn't exist
       return {
         email_notifications: true,
-        push_notifications: true,
         mention_notifications: true,
         follow_notifications: true,
         like_notifications: true,
@@ -294,7 +291,6 @@ export async function getNotificationSettings() {
     return (
       result[0]?.notification_settings || {
         email_notifications: true,
-        push_notifications: true,
         mention_notifications: true,
         follow_notifications: true,
         like_notifications: true,

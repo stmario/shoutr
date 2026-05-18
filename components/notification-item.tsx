@@ -1,10 +1,13 @@
 "use client"
 
+import { useEffect, useState, type MouseEvent } from "react"
+import { useRouter } from "next/navigation"
 import { ClientTime } from "@/components/client-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert, Ban, AtSign } from "lucide-react"
 import Link from "next/link"
 import { UsernameDisplay } from "@/components/username-display"
+import { markNotificationAsRead } from "@/app/actions/notification-actions"
 
 interface NotificationItemProps {
   notification: {
@@ -25,6 +28,37 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
+  const router = useRouter()
+  const [isRead, setIsRead] = useState(notification.is_read)
+
+  useEffect(() => {
+    setIsRead(notification.is_read)
+  }, [notification.id, notification.is_read])
+
+  const markAsRead = async () => {
+    if (isRead) return
+    setIsRead(true)
+    try {
+      await markNotificationAsRead(notification.id)
+      router.refresh()
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error)
+      setIsRead(false)
+    }
+  }
+
+  const handleDotClick = (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    void markAsRead()
+  }
+
+  const handleRowClick = () => {
+    if (!isRead) {
+      void markAsRead()
+    }
+  }
+
   const renderIcon = () => {
     switch (notification.type) {
       case "like":
@@ -189,8 +223,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
   return (
     <Link
       href={getNotificationLink()}
+      onClick={handleRowClick}
       className={`flex items-start gap-3 p-4 hover:bg-muted transition-colors ${
-        !notification.is_read ? "bg-muted/50 border-l-2 border-l-purple-600" : ""
+        !isRead ? "bg-muted/50 border-l-2 border-l-purple-600" : ""
       }`}
     >
       <Avatar className="h-10 w-10">
@@ -207,11 +242,15 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         </div>
         <ClientTime value={notification.created_at} className="text-xs text-muted-foreground mt-1" />
       </div>
-      {!notification.is_read && (
-        <span
-          className="mt-2 h-2 w-2 shrink-0 rounded-full bg-purple-600"
-          aria-label="Unread notification"
-        />
+      {!isRead && (
+        <button
+          type="button"
+          onClick={handleDotClick}
+          className="mt-1 shrink-0 rounded-full p-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
+          aria-label="Mark as read"
+        >
+          <span className="block h-2 w-2 rounded-full bg-purple-600" />
+        </button>
       )}
     </Link>
   )
