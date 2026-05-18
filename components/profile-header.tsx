@@ -4,6 +4,7 @@ import { CalendarDays, Coins, MapPin, LinkIcon, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FollowButton } from "@/components/follow-button"
 import { MessageButton } from "@/components/message-button"
+import { BlockUserButton } from "@/components/block-user-button"
 import type { ProfileUser } from "@/app/actions/profile"
 import { formatDate } from "@/lib/utils"
 import { UsernameDisplay } from "@/components/username-display"
@@ -46,9 +47,16 @@ export function ProfileHeader({ profile, isCurrentUser, stakedShot }: ProfileHea
                 </Link>
               </Button>
             ) : (
-              <div className="flex gap-2">
-                <MessageButton userId={profile.id} />
-                <FollowButton profileUserId={profile.id} initialIsFollowing={profile.is_following} />
+              <div className="flex flex-wrap justify-end gap-2 max-w-[min(100%,22rem)]">
+                {profile.viewer_has_blocked ? (
+                  <BlockUserButton targetUserId={profile.id} initialBlocked />
+                ) : (
+                  <>
+                    <MessageButton userId={profile.id} />
+                    <FollowButton profileUserId={profile.id} initialIsFollowing={profile.is_following} />
+                    <BlockUserButton targetUserId={profile.id} initialBlocked={false} />
+                  </>
+                )}
               </div>
             )}
           </div>

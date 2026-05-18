@@ -139,6 +139,11 @@ export async function getBookmarkedShouts(limit = 20, offset = 0): Promise<Bookm
       INNER JOIN shouts s ON b.shout_id = s.id
       INNER JOIN users u ON s.user_id = u.id
       WHERE b.user_id = $1
+      AND u.id NOT IN (
+        SELECT blocked_id FROM user_blocks WHERE blocker_id = $1
+        UNION
+        SELECT blocker_id FROM user_blocks WHERE blocked_id = $1
+      )
       ORDER BY b.created_at DESC
       LIMIT $2 OFFSET $3
     `,

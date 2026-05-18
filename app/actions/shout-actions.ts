@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { normalizeImageUrl } from "@/lib/media-url"
 import { createNotification } from "./notification-actions"
+import { areUsersBlockedPair } from "./block-actions"
 
 export async function createShout(formData: FormData) {
   try {
@@ -209,6 +210,13 @@ export async function getShoutById(id: number) {
 
   const row = result[0]
   if (!row) return null
+
+  const viewer = await getCurrentUser()
+  if (viewer && row.user_id !== viewer.id) {
+    if (await areUsersBlockedPair(viewer.id, row.user_id)) {
+      return null
+    }
+  }
 
   return {
     ...row,

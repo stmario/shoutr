@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { getUsersTableColumns } from "@/lib/users-table-columns"
 import { serializeTimestamp } from "@/lib/format-time"
 import { createNotification } from "./notification-actions"
+import { areUsersBlockedPair } from "./block-actions"
 
 export interface Message {
   id: number
@@ -91,6 +92,21 @@ async function isParticipant(conversationId: number, userId: number): Promise<bo
     [conversationId, userId],
   )
   return rows.length > 0
+}
+
+/** True if the current user cannot exchange messages with anyone else in this conversation (symmetric block). */
+async function conversationBlockedForUser(conversationId: number, currentUserId: number): Promise<boolean> {
+  const others = await executeQuery(
+    `SELECT user_id FROM conversation_participants WHERE conversation_id = $1 AND user_id != $2`,
+    [conversationId, currentUserId],
+  )
+  for (const row of others) {
+    const otherId = Number((row as { user_id: unknown }).user_id)
+    if (await areUsersBlockedPair(currentUserId, otherId)) {
+      return true
+    }
+  }
+  return false
 }
 
 async function userAllowsMessageNotification(userId: number): Promise<boolean> {
@@ -283,6 +299,10 @@ export async function sendMessage(conversationId: number, content: string) {
       return { success: false, message: "You are not a participant in this conversation" }
     }
 
+    if (await conversationBlockedForUser(conversationId, currentUser.id)) {
+      return { success: false, message: "You cannot message this user" }
+    }
+
     const result = await executeQuery(
       `
       INSERT INTO messages (conversation_id, sender_id, content)
@@ -393,6 +413,13 @@ export async function createConversation(participantIds: number[]) {
       return { success: false, message: "Select someone to message" }
     }
 
+    for (const pid of uniqueIds) {
+      if (pid === currentUser.id) continue
+      if (await areUsersBlockedPair(currentUser.id, pid)) {
+        return { success: false, message: "You cannot message this user" }
+      }
+    }
+
     const existingConversation = await findExistingConversation(uniqueIds)
     if (existingConversation) {
       return { success: true, conversationId: existingConversation.id }
@@ -457,6 +484,10 @@ export async function startConversation(userId: number) {
       return { success: false, message: "You cannot message yourself" }
     }
 
+    if (await areUsersBlockedPair(currentUser.id, userId)) {
+      return { success: false, message: "You cannot message this user" }
+    }
+
     const target = await executeQuery(`SELECT id FROM users WHERE id = $1`, [userId])
     if (target.length === 0) {
       return { success: false, message: "User not found" }
@@ -495,6 +526,11 @@ export async function searchMessageRecipients(query: string, limit = 12): Promis
       SELECT id, username, avatar_url
       FROM users
       WHERE id != $1
+      AND id NOT IN (
+        SELECT blocked_id FROM user_blocks WHERE blocker_id = $1
+        UNION
+        SELECT blocker_id FROM user_blocks WHERE blocked_id = $1
+      )
       AND (username ILIKE $2 OR wallet_address ILIKE $3)
       ORDER BY
         CASE WHEN LOWER(username) = LOWER($4) THEN 0
@@ -510,6 +546,11 @@ export async function searchMessageRecipients(query: string, limit = 12): Promis
       SELECT id, username, avatar_url
       FROM users
       WHERE id != $1
+      AND id NOT IN (
+        SELECT blocked_id FROM user_blocks WHERE blocker_id = $1
+        UNION
+        SELECT blocker_id FROM user_blocks WHERE blocked_id = $1
+      )
       AND username ILIKE $2
       ORDER BY
         CASE WHEN LOWER(username) = LOWER($3) THEN 0
@@ -525,6 +566,46 @@ export async function searchMessageRecipients(query: string, limit = 12): Promis
   } catch (error) {
     console.error("Error searching message recipients:", error)
     return []
+  }
+}
+
+/** Remove this conversation from the current user's inbox (does not delete the other participant's copy). */
+export async function deleteConversation(
+  conversationId: number,
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return { success: false, message: "You must be logged in" }
+    }
+
+    if (!(await isParticipant(conversationId, currentUser.id))) {
+      return { success: false, message: "Conversation not found" }
+    }
+
+    await executeQuery(
+      `DELETE FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2`,
+      [conversationId, currentUser.id],
+    )
+
+    await executeQuery(
+      `
+      DELETE FROM conversations c
+      WHERE c.id = $1
+      AND NOT EXISTS (
+        SELECT 1 FROM conversation_participants cp WHERE cp.conversation_id = c.id
+      )
+      `,
+      [conversationId],
+    )
+
+    revalidatePath("/messages")
+    revalidatePath(`/messages/${conversationId}`)
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error deleting conversation:", error)
+    return { success: false, message: "Failed to delete conversation" }
   }
 }
 

@@ -42,9 +42,9 @@ export function ProfileReshoutList({
 
   const fetchPage = useCallback(
     async (pageOffset: number) => {
-      return (await getUserReshouts(profileId, 10, pageOffset)) as ReshoutRow[]
+      return (await getUserReshouts(profileId, 10, pageOffset, currentUserId)) as ReshoutRow[]
     },
-    [profileId],
+    [profileId, currentUserId],
   )
 
   useEffect(() => {

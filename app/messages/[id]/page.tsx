@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DeleteConversationButton } from "@/components/delete-conversation-button"
 
 interface ConversationPageProps {
   params: Promise<{
@@ -48,7 +49,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
           <Link href="/messages" className="mr-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <Link href={`/profile/${otherParticipant.username}`} className="flex items-center gap-2 min-w-0">
+          <Link href={`/profile/${otherParticipant.username}`} className="flex items-center gap-2 min-w-0 flex-1">
             <Avatar className="h-8 w-8 shrink-0">
               <AvatarImage
                 src={otherParticipant.avatar_url || "/placeholder.svg?height=32&width=32"}
@@ -61,6 +62,10 @@ export default async function ConversationPage({ params }: ConversationPageProps
               <p className="text-xs text-muted-foreground truncate">@{otherParticipant.username}</p>
             </div>
           </Link>
+          <DeleteConversationButton
+            conversationId={conversationId}
+            otherUsername={otherParticipant.username}
+          />
         </div>
       </header>
       <ConversationThread conversationId={conversationId} currentUserId={user.id} />

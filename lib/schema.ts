@@ -69,6 +69,25 @@ export const follows = pgTable(
   },
 )
 
+/** User A blocks user B — A hides B in feeds; either side blocks DMs/follows between them. */
+export const userBlocks = pgTable(
+  "user_blocks",
+  {
+    blocker_id: integer("blocker_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blocked_id: integer("blocked_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.blocker_id, table.blocked_id] }),
+    }
+  },
+)
+
 // Reshouts table
 export const reshouts = pgTable(
   "reshouts",
@@ -180,7 +199,7 @@ export const notifications = pgTable("notifications", {
   actor_id: integer("actor_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(), // like, reshout, follow, comment, mention, message, shout_deleted, comment_deleted
+  type: text("type").notNull(), // like, reshout, follow, comment, mention, message, shout_deleted, comment_deleted, blocked
   shout_id: integer("shout_id").references(() => shouts.id, { onDelete: "cascade" }),
   comment_id: integer("comment_id").references(() => comments.id, { onDelete: "cascade" }),
   shout_deletion_id: integer("shout_deletion_id").references(() => shoutDeletions.id, {

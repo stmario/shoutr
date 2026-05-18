@@ -5,6 +5,7 @@ import { formatLikeWeightShot } from "@/lib/like-weight"
 import { refreshUserEnsVerified } from "@/lib/ens-verified"
 import { getStakedBalance } from "@/lib/staking-read"
 import { getCurrentUser } from "./auth"
+import { areUsersBlockedPair } from "./block-actions"
 
 export type ProfileUser = {
   id: number
@@ -18,6 +19,10 @@ export type ProfileUser = {
   shouts_count: number
   is_following: boolean
   is_verified: boolean
+  /** Current viewer has blocked this profile user. */
+  viewer_has_blocked: boolean
+  /** This profile user has blocked the current viewer. */
+  profile_blocked_viewer: boolean
 }
 
 /** ENS verified for display (DB flag or live reverse-ENS match). */
@@ -81,7 +86,23 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
               WHERE follower_id = $2 AND following_id = u.id
             )
           END
-        ) as is_following
+        ) as is_following,
+        (
+          CASE
+            WHEN $2::integer IS NULL THEN false
+            ELSE EXISTS(
+              SELECT 1 FROM user_blocks WHERE blocker_id = $2 AND blocked_id = u.id
+            )
+          END
+        ) as viewer_has_blocked,
+        (
+          CASE
+            WHEN $2::integer IS NULL THEN false
+            ELSE EXISTS(
+              SELECT 1 FROM user_blocks WHERE blocker_id = u.id AND blocked_id = $2
+            )
+          END
+        ) as profile_blocked_viewer
       FROM users u
       WHERE u.username = $1
     `,
@@ -93,9 +114,12 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
     }
 
     const row = result[0] as Record<string, unknown>
+    const bool = (v: unknown) => v === true || v === "t" || v === "true"
     return {
       ...(row as ProfileUser),
-      is_verified: row.is_verified === true || row.is_verified === "t" || row.is_verified === "true",
+      is_verified: bool(row.is_verified),
+      viewer_has_blocked: bool(row.viewer_has_blocked),
+      profile_blocked_viewer: bool(row.profile_blocked_viewer),
     }
   } catch (error) {
     console.error("Error fetching user profile:", error)
@@ -103,8 +127,19 @@ export async function getUserProfile(username: string): Promise<ProfileUser | nu
   }
 }
 
-export async function getUserReshouts(userId: number, limit = 10, offset = 0) {
+export async function getUserReshouts(
+  userId: number,
+  limit = 10,
+  offset = 0,
+  viewerUserId?: number | null,
+) {
   try {
+    if (viewerUserId != null && viewerUserId !== userId) {
+      if (await areUsersBlockedPair(viewerUserId, userId)) {
+        return []
+      }
+    }
+
     const result = await executeQuery(
       `
       SELECT 
@@ -137,8 +172,19 @@ export async function getUserReshouts(userId: number, limit = 10, offset = 0) {
   }
 }
 
-export async function getUserShouts(userId: number, limit = 10, offset = 0) {
+export async function getUserShouts(
+  userId: number,
+  limit = 10,
+  offset = 0,
+  viewerUserId?: number | null,
+) {
   try {
+    if (viewerUserId != null && viewerUserId !== userId) {
+      if (await areUsersBlockedPair(viewerUserId, userId)) {
+        return []
+      }
+    }
+
     const result = await executeQuery(
       `
       SELECT 
@@ -171,8 +217,19 @@ export async function getUserShouts(userId: number, limit = 10, offset = 0) {
 }
 
 /** Shouts this user has liked (for profile Likes tab). */
-export async function getUserLikedShouts(userId: number, limit = 10, offset = 0) {
+export async function getUserLikedShouts(
+  userId: number,
+  limit = 10,
+  offset = 0,
+  viewerUserId?: number | null,
+) {
   try {
+    if (viewerUserId != null && viewerUserId !== userId) {
+      if (await areUsersBlockedPair(viewerUserId, userId)) {
+        return []
+      }
+    }
+
     const result = await executeQuery(
       `
       SELECT 

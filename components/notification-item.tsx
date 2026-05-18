@@ -2,7 +2,7 @@
 
 import { ClientTime } from "@/components/client-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert } from "lucide-react"
+import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert, Ban } from "lucide-react"
 import Link from "next/link"
 import { UsernameDisplay } from "@/components/username-display"
 
@@ -151,6 +151,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
     }
     if (notification.type === "comment_deleted") {
       return notification.shout_id ? `/shout/${notification.shout_id}` : `/profile/${notification.actor_username}`
+    }
+    if (notification.type === "blocked") {
+      return "/notifications"
     }
     if (notification.shout_id) {
       return `/shout/${notification.shout_id}`

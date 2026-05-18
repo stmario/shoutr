@@ -39,8 +39,15 @@ export async function search(
     // If type is specified, only search that type
     if (type === "user" || !type) {
       const usernameMatch = ilike(users.username, searchTerm)
+      const blockUser = currentUser
+        ? sql`NOT EXISTS (
+            SELECT 1 FROM user_blocks ub
+            WHERE (ub.blocker_id = ${currentUser.id} AND ub.blocked_id = ${users.id})
+               OR (ub.blocker_id = ${users.id} AND ub.blocked_id = ${currentUser.id})
+          )`
+        : sql`true`
       const userWhere = currentUser
-        ? and(usernameMatch, ne(users.id, currentUser.id))
+        ? and(usernameMatch, ne(users.id, currentUser.id), blockUser)
         : usernameMatch
 
       const userResults = await db
@@ -69,7 +76,9 @@ export async function search(
       // Wallet prefix/exact match (e.g. holder_* usernames or 0x… lookup)
       if (/^0x[a-fA-F0-9]{4,}$/i.test(normalizedQuery)) {
         const walletMatch = ilike(users.wallet_address, `${normalizedQuery}%`)
-        const walletWhere = currentUser ? and(walletMatch, ne(users.id, currentUser.id)) : walletMatch
+        const walletWhere = currentUser
+          ? and(walletMatch, ne(users.id, currentUser.id), blockUser)
+          : walletMatch
 
         const walletUsers = await db
           .select({
@@ -94,7 +103,13 @@ export async function search(
     }
 
     if (type === "shout" || !type) {
-      // Search shouts
+      const blockShoutAuthor = currentUser
+        ? sql`NOT EXISTS (
+            SELECT 1 FROM user_blocks ub
+            WHERE (ub.blocker_id = ${currentUser.id} AND ub.blocked_id = ${users.id})
+               OR (ub.blocker_id = ${users.id} AND ub.blocked_id = ${currentUser.id})
+          )`
+        : sql`true`
       const shoutResults = await db
         .select({
           type: sql<"shout">`'shout'`,
@@ -106,7 +121,7 @@ export async function search(
         })
         .from(shouts)
         .innerJoin(users, eq(shouts.user_id, users.id))
-        .where(ilike(shouts.content, searchTerm))
+        .where(and(ilike(shouts.content, searchTerm), blockShoutAuthor))
         .orderBy(desc(shouts.created_at))
         .limit(limit)
         .offset(offset)
@@ -181,6 +196,15 @@ export async function getTrendingHashtags(limit = 10) {
 // Get shouts by hashtag with pagination
 export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset = 0) {
   try {
+    const currentUser = await getCurrentUser()
+    const blockAuthor = currentUser
+      ? sql`NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE (ub.blocker_id = ${currentUser.id} AND ub.blocked_id = ${shouts.user_id})
+             OR (ub.blocker_id = ${shouts.user_id} AND ub.blocked_id = ${currentUser.id})
+        )`
+      : sql`true`
+
     const result = await db
       .select({
         id: shouts.id,
@@ -198,7 +222,7 @@ export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset
       .innerJoin(users, eq(shouts.user_id, users.id))
       .innerJoin(shoutHashtags, eq(shouts.id, shoutHashtags.shout_id))
       .innerJoin(hashtags, eq(shoutHashtags.hashtag_id, hashtags.id))
-      .where(eq(hashtags.name, hashtagName))
+      .where(and(eq(hashtags.name, hashtagName), blockAuthor))
       .leftJoin(comments, eq(shouts.id, comments.shout_id))
       .leftJoin(reshouts, eq(shouts.id, reshouts.shout_id))
       .groupBy(
@@ -229,6 +253,14 @@ export async function getSuggestedUsers(limit = 5) {
     const currentUserId = currentUser?.id || 0
 
     // Get users with most followers who the current user is not following
+    const blockSuggested = currentUserId
+      ? sql`NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE (ub.blocker_id = ${currentUserId} AND ub.blocked_id = ${users.id})
+             OR (ub.blocker_id = ${users.id} AND ub.blocked_id = ${currentUserId})
+        )`
+      : sql`true`
+
     const result = await db
       .select({
         id: users.id,
@@ -246,6 +278,7 @@ export async function getSuggestedUsers(limit = 5) {
             SELECT 1 FROM follows 
             WHERE follower_id = ${currentUserId} AND following_id = ${users.id}
           )`,
+          blockSuggested,
         ),
       )
       .groupBy(users.id, users.username, users.avatar_url, users.is_verified)

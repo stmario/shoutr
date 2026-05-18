@@ -4,6 +4,7 @@ import { executeQuery } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { createNotification } from "./notification-actions"
+import { areUsersBlockedPair } from "./block-actions"
 
 async function userAllowsFollowNotification(userId: number): Promise<boolean> {
   try {
@@ -32,6 +33,10 @@ export async function followUser(targetUserId: number) {
 
     if (currentUser.id === targetUserId) {
       return { error: "You cannot follow yourself" }
+    }
+
+    if (await areUsersBlockedPair(currentUser.id, targetUserId)) {
+      return { error: "You cannot follow this user" }
     }
 
     const target = await executeQuery(`SELECT id, username FROM users WHERE id = $1`, [targetUserId])

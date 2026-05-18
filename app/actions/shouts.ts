@@ -139,6 +139,11 @@ async function getFollowingFeed(userId: number, limit: number, offset: number): 
         UNION
         SELECT $3
       )
+      AND s.user_id NOT IN (
+        SELECT blocked_id FROM user_blocks WHERE blocker_id = $3
+        UNION
+        SELECT blocker_id FROM user_blocks WHERE blocked_id = $3
+      )
 
       UNION ALL
 
@@ -171,6 +176,16 @@ async function getFollowingFeed(userId: number, limit: number, offset: number): 
         UNION
         SELECT $3
       )
+      AND s.user_id NOT IN (
+        SELECT blocked_id FROM user_blocks WHERE blocker_id = $3
+        UNION
+        SELECT blocker_id FROM user_blocks WHERE blocked_id = $3
+      )
+      AND ru.id NOT IN (
+        SELECT blocked_id FROM user_blocks WHERE blocker_id = $3
+        UNION
+        SELECT blocker_id FROM user_blocks WHERE blocked_id = $3
+      )
     ) feed
     ORDER BY sort_at DESC
     LIMIT $1 OFFSET $2
@@ -188,6 +203,11 @@ async function getDiscoverShouts(userId: number, limit: number, offset: number):
       SELECT following_id FROM follows WHERE follower_id = $3
       UNION
       SELECT $3
+    )
+    AND s.user_id NOT IN (
+      SELECT blocked_id FROM user_blocks WHERE blocker_id = $3
+      UNION
+      SELECT blocker_id FROM user_blocks WHERE blocked_id = $3
     )
     ORDER BY COALESCE(s.like_count, 0) DESC, s.created_at DESC
     LIMIT $1 OFFSET $2

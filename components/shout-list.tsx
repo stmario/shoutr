@@ -12,6 +12,8 @@ interface ShoutListProps {
   initialShouts?: Shout[]
   userId?: number
   profileId?: number
+  /** Logged-in viewer (for block checks on profile / likes pagination). */
+  viewerUserId?: number
   /** Profile owner's liked shouts (Likes tab). */
   likedProfileId?: number
   emptyMessage?: string
@@ -30,6 +32,7 @@ export function ShoutList({
   initialShouts = [],
   userId,
   profileId,
+  viewerUserId,
   likedProfileId,
   emptyMessage,
   refreshKey = 0,
@@ -43,14 +46,14 @@ export function ShoutList({
   const fetchPage = useCallback(
     async (pageOffset: number, limit = 10) => {
       if (likedProfileId) {
-        return getUserLikedShouts(likedProfileId, limit, pageOffset)
+        return getUserLikedShouts(likedProfileId, limit, pageOffset, viewerUserId)
       }
       if (profileId) {
-        return getUserShouts(profileId, limit, pageOffset)
+        return getUserShouts(profileId, limit, pageOffset, viewerUserId)
       }
       return getShouts(limit, pageOffset)
     },
-    [profileId, likedProfileId],
+    [profileId, likedProfileId, viewerUserId],
   )
 
   const refreshFeed = useCallback(async () => {

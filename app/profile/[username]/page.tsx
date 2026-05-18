@@ -31,11 +31,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const currentUser = await getCurrentUser()
   const isCurrentUser = currentUser?.id === profile.id
+
+  if (profile.profile_blocked_viewer && !isCurrentUser) {
+    notFound()
+  }
+
   const displayProfile = await syncProfileEnsVerified(profile, currentUser?.id ?? null)
 
   const [userShouts, likedShouts, stakedShot] = await Promise.all([
-    getUserShouts(profile.id, 10, 0),
-    getUserLikedShouts(profile.id, 10, 0),
+    getUserShouts(profile.id, 10, 0, currentUser?.id),
+    getUserLikedShouts(profile.id, 10, 0, currentUser?.id),
     getProfileStakedShot(profile.wallet_address),
   ])
 
@@ -82,7 +87,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </TabsList>
           <TabsContent value="shouts" className="mt-0">
             <div className="container max-w-2xl mx-auto px-4 py-4">
-              <ShoutList initialShouts={userShouts} userId={currentUser?.id} profileId={profile.id} />
+              <ShoutList
+                initialShouts={userShouts}
+                userId={currentUser?.id}
+                profileId={profile.id}
+                viewerUserId={currentUser?.id}
+              />
             </div>
           </TabsContent>
           <TabsContent value="reshouts" className="mt-0">
@@ -101,6 +111,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 initialShouts={likedShouts as Shout[]}
                 userId={currentUser?.id}
                 likedProfileId={profile.id}
+                viewerUserId={currentUser?.id}
               />
             </div>
           </TabsContent>
