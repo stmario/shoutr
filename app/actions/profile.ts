@@ -170,6 +170,41 @@ export async function getUserShouts(userId: number, limit = 10, offset = 0) {
   }
 }
 
+/** Shouts this user has liked (for profile Likes tab). */
+export async function getUserLikedShouts(userId: number, limit = 10, offset = 0) {
+  try {
+    const result = await executeQuery(
+      `
+      SELECT 
+        s.id, 
+        s.content, 
+        s.created_at, 
+        s.image_url,
+        s.user_id,
+        u.username,
+        u.avatar_url,
+        u.wallet_address,
+        COALESCE(u.is_verified, false) as author_is_verified,
+        s.like_count::text as vote_count,
+        (SELECT COUNT(*)::int FROM comments WHERE shout_id = s.id) as comments_count,
+        (SELECT COUNT(*)::int FROM reshouts WHERE shout_id = s.id) as reshouts_count
+      FROM likes l
+      JOIN shouts s ON l.shout_id = s.id
+      JOIN users u ON s.user_id = u.id
+      WHERE l.user_id = $1
+      ORDER BY s.created_at DESC
+      LIMIT $2 OFFSET $3
+    `,
+      [userId, limit, offset],
+    )
+
+    return result
+  } catch (error) {
+    console.error("Error fetching liked shouts:", error)
+    return []
+  }
+}
+
 export type FollowListUser = {
   id: number
   username: string

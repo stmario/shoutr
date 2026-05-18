@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { ShoutCard } from "@/components/shout-card"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
-import { getUserShouts } from "@/app/actions/profile"
+import { getUserLikedShouts, getUserShouts } from "@/app/actions/profile"
 import { getShouts, type Shout } from "@/app/actions/shouts"
 import { timelineLoadMoreClass } from "@/lib/timeline-styles"
 
@@ -12,6 +12,9 @@ interface ShoutListProps {
   initialShouts?: Shout[]
   userId?: number
   profileId?: number
+  /** Profile owner's liked shouts (Likes tab). */
+  likedProfileId?: number
+  emptyMessage?: string
   /** Increment to refetch the first page (e.g. after posting a shout). */
   refreshKey?: number
   variant?: "card" | "timeline"
@@ -27,6 +30,8 @@ export function ShoutList({
   initialShouts = [],
   userId,
   profileId,
+  likedProfileId,
+  emptyMessage,
   refreshKey = 0,
   variant = "card",
 }: ShoutListProps) {
@@ -37,12 +42,15 @@ export function ShoutList({
 
   const fetchPage = useCallback(
     async (pageOffset: number, limit = 10) => {
+      if (likedProfileId) {
+        return getUserLikedShouts(likedProfileId, limit, pageOffset)
+      }
       if (profileId) {
         return getUserShouts(profileId, limit, pageOffset)
       }
       return getShouts(limit, pageOffset)
     },
-    [profileId],
+    [profileId, likedProfileId],
   )
 
   const refreshFeed = useCallback(async () => {
@@ -89,8 +97,12 @@ export function ShoutList({
   if (shouts.length === 0 && !loading) {
     return (
       <div className={variant === "timeline" ? "px-4 py-10 text-center" : "py-10 text-center"}>
-        <p className="text-muted-foreground">No shouts to display.</p>
-        {!profileId && <p className="text-muted-foreground">Follow users or create your first shout!</p>}
+        <p className="text-muted-foreground">
+          {emptyMessage ?? (likedProfileId ? "No liked shouts yet." : "No shouts to display.")}
+        </p>
+        {!profileId && !likedProfileId && (
+          <p className="text-muted-foreground">Follow users or create your first shout!</p>
+        )}
       </div>
     )
   }

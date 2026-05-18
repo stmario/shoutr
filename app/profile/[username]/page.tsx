@@ -3,7 +3,14 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { ProfileHeader } from "@/components/profile-header"
 import { ShoutList } from "@/components/shout-list"
 import { ProfileReshoutList } from "@/components/profile-reshout-list"
-import { getProfileStakedShot, getUserProfile, getUserShouts, syncProfileEnsVerified } from "@/app/actions/profile"
+import {
+  getProfileStakedShot,
+  getUserLikedShouts,
+  getUserProfile,
+  getUserShouts,
+  syncProfileEnsVerified,
+} from "@/app/actions/profile"
+import type { Shout } from "@/app/actions/shouts"
 import { getCurrentUser } from "@/app/actions/auth"
 import { notFound } from "next/navigation"
 import { BadgeCheck } from "lucide-react"
@@ -26,8 +33,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const isCurrentUser = currentUser?.id === profile.id
   const displayProfile = await syncProfileEnsVerified(profile, currentUser?.id ?? null)
 
-  const [userShouts, stakedShot] = await Promise.all([
+  const [userShouts, likedShouts, stakedShot] = await Promise.all([
     getUserShouts(profile.id, 10, 0),
+    getUserLikedShouts(profile.id, 10, 0),
     getProfileStakedShot(profile.wallet_address),
   ])
 
@@ -89,7 +97,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </TabsContent>
           <TabsContent value="likes" className="mt-0">
             <div className="container max-w-2xl mx-auto px-4 py-4">
-              <p className="text-center text-muted-foreground py-10">Liked shouts will appear here.</p>
+              <ShoutList
+                initialShouts={likedShouts as Shout[]}
+                userId={currentUser?.id}
+                likedProfileId={profile.id}
+              />
             </div>
           </TabsContent>
         </Tabs>
