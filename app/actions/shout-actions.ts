@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { normalizeImageUrl } from "@/lib/media-url"
 import { createNotification } from "./notification-actions"
 import { areUsersBlockedPair } from "./block-actions"
+import { notifyContentMentions } from "./mention-actions"
 
 export async function createShout(formData: FormData) {
   try {
@@ -80,6 +81,12 @@ export async function createShout(formData: FormData) {
           .onConflictDoNothing()
       }
     }
+
+    await notifyContentMentions({
+      actorId: currentUser.id,
+      content: trimmedContent,
+      shoutId,
+    })
 
     revalidatePath("/")
 

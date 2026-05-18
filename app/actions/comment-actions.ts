@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "@/lib/auth"
 import { serializeTimestamp } from "@/lib/format-time"
 import { createNotification } from "./notification-actions"
+import { notifyContentMentions } from "./mention-actions"
 
 export type Comment = {
   id: number
@@ -120,6 +121,13 @@ export async function postComment(shoutId: number, content: string) {
         commentId: comment.id,
       })
     }
+
+    await notifyContentMentions({
+      actorId: currentUser.id,
+      content: trimmed,
+      shoutId,
+      commentId: comment.id,
+    })
 
     revalidatePath(`/shout/${shoutId}`)
     revalidatePath("/")

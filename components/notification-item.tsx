@@ -2,7 +2,7 @@
 
 import { ClientTime } from "@/components/client-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert, Ban } from "lucide-react"
+import { Heart, UserPlus, MessageCircle, Repeat2, ArrowUp, Mail, ShieldAlert, Ban, AtSign } from "lucide-react"
 import Link from "next/link"
 import { UsernameDisplay } from "@/components/username-display"
 
@@ -39,6 +39,10 @@ export function NotificationItem({ notification }: NotificationItemProps) {
         return <Repeat2 className="h-4 w-4 text-green-500" />
       case "message":
         return <Mail className="h-4 w-4 text-purple-500" />
+      case "mention":
+        return <AtSign className="h-4 w-4 text-purple-600" />
+      case "blocked":
+        return <Ban className="h-4 w-4 text-muted-foreground" />
       case "shout_deleted":
       case "comment_deleted":
         return <ShieldAlert className="h-4 w-4 text-amber-500" />
@@ -102,6 +106,27 @@ export function NotificationItem({ notification }: NotificationItemProps) {
           <>
             {actorName}
             <span className="text-muted-foreground"> sent you a message</span>
+          </>
+        )
+      case "mention":
+        return (
+          <>
+            {actorName}
+            <span className="text-muted-foreground">
+              {notification.comment_id ? " mentioned you in a comment" : " mentioned you in a shout"}
+            </span>
+            {(notification.shout_content || notification.comment_content) && (
+              <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                &ldquo;{notification.comment_content ?? notification.shout_content}&rdquo;
+              </p>
+            )}
+          </>
+        )
+      case "blocked":
+        return (
+          <>
+            {actorName}
+            <span className="text-muted-foreground"> blocked you</span>
           </>
         )
       case "shout_deleted":

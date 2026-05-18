@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
+import { MentionAutocompleteTextarea } from "@/components/mention-autocomplete-textarea"
 import { ImageIcon, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
 import { useToast } from "@/hooks/use-toast"
@@ -101,8 +101,8 @@ export function ComposeShout({ username, avatarUrl, onShoutCreated, variant = "c
             <AvatarFallback>{showName.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <Textarea
-              placeholder="What's happening?"
+            <MentionAutocompleteTextarea
+              placeholder="What's happening? Use @username to mention someone."
               className="border-0 focus-visible:ring-0 resize-none text-lg"
               value={shoutContent}
               onChange={handleShoutChange}

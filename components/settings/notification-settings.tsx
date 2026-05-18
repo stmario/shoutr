@@ -113,7 +113,7 @@ export function NotificationSettings({ initialSettings }: NotificationSettingsPr
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="mention_notifications">Mentions</Label>
-                  <p className="text-sm text-muted-foreground">When someone mentions you in a shout</p>
+                  <p className="text-sm text-muted-foreground">When someone @mentions you in a shout or comment</p>
                 </div>
                 <Switch
                   id="mention_notifications"

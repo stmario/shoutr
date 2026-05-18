@@ -4,7 +4,7 @@ import type { FormEvent } from "react"
 import { useState } from "react"
 import { Loader2, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { MentionAutocompleteTextarea } from "@/components/mention-autocomplete-textarea"
 import { postComment } from "@/app/actions/comment-actions"
 import { useToast } from "@/hooks/use-toast"
 import type { Comment } from "@/app/actions/comment-actions"
@@ -52,10 +52,10 @@ export function CommentForm({ shoutId, onPosted }: CommentFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="border-t pt-4">
-      <Textarea
+      <MentionAutocompleteTextarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Write a comment…"
+        placeholder="Write a comment… Use @username to mention someone."
         className="min-h-[80px] resize-none mb-2"
         maxLength={500}
         disabled={isSubmitting}

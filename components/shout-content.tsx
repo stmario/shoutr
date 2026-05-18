@@ -10,16 +10,15 @@ import {
   URL_IN_TEXT_RE,
 } from "@/lib/embed-url"
 import { MARKDOWN_IMAGE_RE } from "@/lib/shout-markdown"
+import { HASHTAG_OR_MENTION_RE } from "@/lib/mentions"
 import { LinkPreviewCard } from "@/components/link-preview-card"
-
-const HASHTAG_RE = /(#\w+)/g
 
 type ShoutContentProps = {
   content: string
   className?: string
 }
 
-/** Text body with hashtags, links, inline images, and video embeds (YouTube, Vimeo). */
+/** Text body with @mentions, hashtags, links, inline images, and video embeds (YouTube, Vimeo). */
 export function ShoutContent({ content, className }: ShoutContentProps) {
   const embeds = collectEmbedsFromText(content)
   const linkPreviewUrls = collectPlainLinkPreviewUrls(content, 4)
@@ -75,7 +74,7 @@ function renderTextSegment(text: string, keyStart: number): ReactNode[] {
     const rawUrl = match[0]
 
     if (index > last) {
-      nodes.push(...renderTextWithHashtags(text.slice(last, index), k))
+      nodes.push(...renderTextWithEntities(text.slice(last, index), k))
       k += index - last
     }
 
@@ -98,29 +97,43 @@ function renderTextSegment(text: string, keyStart: number): ReactNode[] {
   }
 
   if (last < text.length) {
-    nodes.push(...renderTextWithHashtags(text.slice(last), k))
+    nodes.push(...renderTextWithEntities(text.slice(last), k))
   }
 
   return nodes
 }
 
-function renderTextWithHashtags(text: string, keyStart: number): ReactNode[] {
+function renderTextWithEntities(text: string, keyStart: number): ReactNode[] {
   const nodes: ReactNode[] = []
   let last = 0
   let k = keyStart
 
-  for (const match of text.matchAll(HASHTAG_RE)) {
+  const re = new RegExp(HASHTAG_OR_MENTION_RE.source, HASHTAG_OR_MENTION_RE.flags)
+  for (const match of text.matchAll(re)) {
     const index = match.index ?? 0
     if (index > last) {
       nodes.push(<span key={`t-${k++}`}>{text.slice(last, index)}</span>)
     }
-    const tag = match[1]
-    nodes.push(
-      <Link key={`h-${k++}`} href={`/hashtag/${tag.substring(1)}`} className="text-purple-700 hover:underline">
-        {tag}
-      </Link>,
-    )
-    last = index + tag.length
+    const token = match[0]
+    if (token.startsWith("#")) {
+      nodes.push(
+        <Link key={`h-${k++}`} href={`/hashtag/${token.substring(1)}`} className="text-purple-700 hover:underline">
+          {token}
+        </Link>,
+      )
+    } else {
+      const username = token.slice(1)
+      nodes.push(
+        <Link
+          key={`m-${k++}`}
+          href={`/profile/${username}`}
+          className="text-purple-700 hover:underline font-medium"
+        >
+          {token}
+        </Link>,
+      )
+    }
+    last = index + token.length
   }
 
   if (last < text.length) {

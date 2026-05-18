@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
+import { MentionAutocompleteTextarea } from "@/components/mention-autocomplete-textarea"
 import { ImageIcon, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
 import { useToast } from "@/hooks/use-toast"
@@ -89,9 +89,9 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
               <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <Textarea
+              <MentionAutocompleteTextarea
                 name="content"
-                placeholder="What's happening?"
+                placeholder="What's happening? Use @username to mention someone."
                 className="border-0 focus-visible:ring-0 resize-none text-lg min-h-[100px]"
                 value={content}
                 onChange={handleContentChange}
