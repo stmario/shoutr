@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth"
 import { validateUsernameForWallet } from "@/lib/ens-username-guard"
 import { refreshUserEnsVerified } from "@/lib/ens-verified"
 import { getUsersTableColumns, pickExistingColumns } from "@/lib/users-table-columns"
+import { joinSafePgIdentifiers } from "@/lib/sql-identifiers"
 
 export interface ProfileSettings {
   bio?: string
@@ -92,7 +93,7 @@ export async function updateProfileSettings(settings: ProfileSettings) {
       "website",
       "updated_at",
     ])
-    const returningClause = returning.length > 0 ? ` RETURNING ${returning.join(", ")}` : ""
+    const returningClause = returning.length > 0 ? ` RETURNING ${joinSafePgIdentifiers(returning)}` : ""
 
     const result = await executeQuery(
       `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}${returningClause}`,
@@ -172,7 +173,7 @@ export async function updateAccountSettings(settings: AccountSettings) {
     values.push(currentUser.id)
 
     const returning = pickExistingColumns(columns, ["id", "username", "email", "updated_at"])
-    const returningClause = returning.length > 0 ? ` RETURNING ${returning.join(", ")}` : ""
+    const returningClause = returning.length > 0 ? ` RETURNING ${joinSafePgIdentifiers(returning)}` : ""
 
     const result = await executeQuery(
       `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIndex}${returningClause}`,

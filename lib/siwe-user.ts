@@ -6,6 +6,7 @@ import { resolveEnsProfile, isAutoHolderUsername, type EnsProfile } from "./ens-
 import { validateUsernameForWallet } from "./ens-username-guard"
 import { isUsernameEnsVerified, refreshUserEnsVerified } from "./ens-verified"
 import { getUsersTableColumns } from "./users-table-columns"
+import { assertSafePgIdentifier } from "./sql-identifiers"
 import { requireChecksumAddress } from "./wallet-address"
 import { users } from "./schema"
 
@@ -94,8 +95,10 @@ async function insertWalletUser(
 
   const returning = fields.includes("username") ? "id, username" : "id"
 
+  const columnList = fields.map((c) => assertSafePgIdentifier(c, "insertWalletUser columns")).join(", ")
+
   const inserted = await executeQuery(
-    `INSERT INTO users (${fields.join(", ")})
+    `INSERT INTO users (${columnList})
      VALUES (${placeholders.join(", ")})
      RETURNING ${returning}`,
     values,

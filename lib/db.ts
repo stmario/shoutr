@@ -8,9 +8,18 @@ const sql = neon(process.env.DATABASE_URL!)
 // Create a Drizzle client with the SQL client and schema
 export const db = drizzle(sql, { schema })
 
-// Helper function to execute raw SQL queries
-export async function executeQuery(queryText: string, params: any[] = []) {
+/**
+ * Run a parameterized SQL query. Always pass user-controlled data via `params` ($1, $2, …).
+ * Never concatenate untrusted strings into `queryText`.
+ */
+export async function executeQuery(queryText: string, params: unknown[] = []) {
   try {
+    if (typeof queryText !== "string" || queryText.length === 0) {
+      throw new TypeError("executeQuery: queryText must be a non-empty string")
+    }
+    if (!Array.isArray(params)) {
+      throw new TypeError("executeQuery: params must be an array")
+    }
     const result = await sql.query(queryText, params)
     // Neon HTTP driver: `query()` resolves to an array of row objects (not pg's { rows }).
     if (Array.isArray(result)) {
