@@ -7,12 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { followUser } from "@/app/actions/user-actions"
 import { useToast } from "@/hooks/use-toast"
+import { UsernameDisplay } from "@/components/username-display"
 
 interface SuggestedUsersProps {
   users?: {
     id: number
     username: string
     avatar_url: string | null
+    is_verified?: boolean
     followers_count: number
   }[]
   currentUserId?: number
@@ -70,10 +72,11 @@ export function SuggestedUsers({ users = [], currentUserId = 0 }: SuggestedUsers
               </Avatar>
             </Link>
             <div className="flex-1 min-w-0">
-              <Link href={`/profile/${user.username}`} className="hover:underline">
-                <div className="font-medium truncate">{user.username}</div>
-              </Link>
-              <div className="text-sm text-muted-foreground truncate">@{user.username}</div>
+              <UsernameDisplay
+                username={user.username}
+                verified={user.is_verified === true}
+                nameClassName="font-medium"
+              />
             </div>
             <Button
               size="sm"

@@ -234,6 +234,7 @@ export async function getSuggestedUsers(limit = 5) {
         id: users.id,
         username: users.username,
         avatar_url: users.avatar_url,
+        is_verified: users.is_verified,
         followers_count: count(follows.follower_id).as("followers_count"),
       })
       .from(users)
@@ -247,7 +248,7 @@ export async function getSuggestedUsers(limit = 5) {
           )`,
         ),
       )
-      .groupBy(users.id, users.username, users.avatar_url)
+      .groupBy(users.id, users.username, users.avatar_url, users.is_verified)
       .orderBy(desc(sql`followers_count`))
       .limit(limit)
 
