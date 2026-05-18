@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { updateNotificationSettings } from "@/app/actions/settings-actions"
 import { useToast } from "@/hooks/use-toast"
+import { CookiePreferencesButton } from "@/components/cookie-preferences-button"
 
 interface NotificationSettingsProps {
   initialSettings: {
@@ -160,7 +161,10 @@ export function NotificationSettings({ initialSettings }: NotificationSettingsPr
               </div>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              <CookiePreferencesButton />
+            </p>
             <Button type="submit" className="bg-purple-700 hover:bg-purple-800" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>

@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { IcoSidebar } from "@/components/ico/ico-sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { WalletSessionGuard } from "@/components/wallet-session-guard"
+import { CookieConsentProvider } from "@/components/cookie-consent-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
@@ -32,7 +33,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <CookieConsentProvider>
           <TooltipProvider delayDuration={200}>
           <SidebarProvider defaultOpen>
             <div className="relative flex min-h-screen w-full justify-center">
@@ -51,6 +53,7 @@ export default function RootLayout({
             <WalletSessionGuard />
           </SidebarProvider>
           </TooltipProvider>
+          </CookieConsentProvider>
         </ThemeProvider>
       </body>
     </html>

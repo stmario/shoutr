@@ -6,6 +6,7 @@ import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useCookieConsentOptional } from "@/components/cookie-consent-provider"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,8 +23,8 @@ import {
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 
-function readSidebarOpenCookie(fallback: boolean): boolean {
-  if (typeof document === "undefined") return fallback
+function readSidebarOpenCookie(fallback: boolean, allowFunctional: boolean): boolean {
+  if (typeof document === "undefined" || !allowFunctional) return fallback
   const match = document.cookie.match(new RegExp(`(?:^|; )${SIDEBAR_COOKIE_NAME}=([^;]*)`))
   if (!match) return fallback
   return match[1] === "true"
@@ -75,6 +76,8 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile()
+    const consent = useCookieConsentOptional()
+    const allowFunctionalCookies = consent?.ready === true && consent.hasFunctionalConsent === true
     const [openMobile, setOpenMobile] = React.useState(false)
 
     // This is the internal state of the sidebar.
@@ -108,11 +111,11 @@ const SidebarProvider = React.forwardRef<
           _setOpen(nextOpen)
         }
 
-        if (isMobile) {
+        if (isMobile && allowFunctionalCookies) {
           document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
         }
       },
-      [setOpenProp, open, isMobile]
+      [setOpenProp, open, isMobile, allowFunctionalCookies]
     )
 
     const toggleSidebar = React.useCallback(() => {
