@@ -12,6 +12,7 @@ import { ImageIcon, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
 import { useToast } from "@/hooks/use-toast"
 import { ShoutImageAttachmentPanel, useShoutImageAttachment } from "@/components/shout-image-attachment"
+import { ShoutDraftRichPreview } from "@/components/shout-draft-rich-preview"
 
 interface NewShoutFormProps {
   user: {
@@ -97,6 +98,7 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
                 disabled={busy}
               />
               <ShoutImageAttachmentPanel attachment={attachment} disabled={busy} />
+              <ShoutDraftRichPreview content={content} />
             </div>
           </div>
         </CardContent>

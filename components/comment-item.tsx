@@ -16,6 +16,7 @@ import { getCommentModerationDeleteEligibility } from "@/app/actions/comment-del
 import { DeleteCommentDialog } from "@/components/delete-comment-dialog"
 import { ClientTime } from "@/components/client-time"
 import { UsernameDisplay } from "@/components/username-display"
+import { ShoutContent } from "@/components/shout-content"
 
 interface CommentItemProps {
   comment: Comment
@@ -134,7 +135,7 @@ export function CommentItem({
             </>
           ) : null}
         </div>
-        <p className="text-sm mt-1 whitespace-pre-wrap break-words">{comment.content}</p>
+        <ShoutContent content={comment.content} className="text-sm mt-1 break-words" />
       </div>
     </div>
   )

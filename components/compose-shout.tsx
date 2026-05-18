@@ -11,6 +11,7 @@ import { ImageIcon, Loader2 } from "lucide-react"
 import { createShout } from "@/app/actions/shout-actions"
 import { useToast } from "@/hooks/use-toast"
 import { ShoutImageAttachmentPanel, useShoutImageAttachment } from "@/components/shout-image-attachment"
+import { ShoutDraftRichPreview } from "@/components/shout-draft-rich-preview"
 import { timelineRowClass } from "@/lib/timeline-styles"
 import { cn } from "@/lib/utils"
 
@@ -109,6 +110,7 @@ export function ComposeShout({ username, avatarUrl, onShoutCreated, variant = "c
             />
 
             <ShoutImageAttachmentPanel attachment={attachment} disabled={busy} />
+            <ShoutDraftRichPreview content={shoutContent} />
           </div>
         </div>
       </CardContent>
