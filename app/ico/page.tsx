@@ -28,6 +28,8 @@ import {
 } from "@/lib/shot-tokenomics"
 import { Loader2 } from "lucide-react"
 import { ShotTokenLogo } from "@/components/shot-token-logo"
+import { ShoutrExplainerVideo } from "@/components/shoutr-explainer-video"
+import { formatModeratorShotThreshold } from "@/lib/moderation-shot"
 
 export default function ICOPage() {
   const [stats, setStats] = useState<IcoStats | null>(null)
@@ -176,8 +178,11 @@ export default function ICOPage() {
       <Card className="mt-8">
         <CardHeader>
           <CardTitle>How it works</CardTitle>
+          <CardDescription>Watch the explainer, then read how the token sale and app fit together.</CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
+        <CardContent className="text-sm text-muted-foreground space-y-4">
+          <ShoutrExplainerVideo embedded title="Shoutr explainer video" />
+          <div className="space-y-2">
           <p>
             SHOT has a total supply of {formatShotCount(SHOT_TOTAL_SUPPLY)} tokens. {SHOT_DEV_ALLOCATION_PERCENT}% (
             {formatShotCount(SHOT_DEV_ALLOCATION)} SHOT) is reserved for the team; the remaining{" "}
@@ -198,10 +203,21 @@ export default function ICOPage() {
             <Link href="/staking" className="text-primary underline underline-offset-2">
               stake it on the staking page
             </Link>
-            . When you like, your current staked balance is read from the staking contract and stored on that like;
-            the shout total goes up by that amount. If you unlike, that stored amount is removed — even if you
-            unstaked in between.
+            . Likes are powered by staked SHOT: 1 staked SHOT equals 1 SHOT of like weight (1:1). You need a
+            staked balance above 0 to like at all.
           </p>
+          <p>
+            When you like a shout, the app reads your full staked balance from the staking contract and adds that
+            amount to the shout total — for example, 50 staked SHOT means one like contributes 50 to the total. That
+            weight is stored on your like at that moment. If you unstake later, the shout total does not change until
+            you unlike, which removes the stored amount.
+          </p>
+          <p>
+            Stake-weighted moderation: if you have more than {formatModeratorShotThreshold()} staked, you can remove
+            another user&apos;s shouts and comments when your staked balance is higher than theirs. You must enter a
+            reason; the author is notified. This only applies to other people&apos;s content, not your own.
+          </p>
+          </div>
         </CardContent>
       </Card>
     </div>
