@@ -2,6 +2,7 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { InfiniteScrollShoutList } from "@/components/infinite-scroll-shout-list"
 import { getCurrentUser } from "@/lib/auth"
 import { getShoutsByHashtag } from "@/app/actions/explore-actions"
+import { getHashtagByName } from "@/app/actions/hashtag-actions"
 import { notFound, redirect } from "next/navigation"
 import { Hash } from "lucide-react"
 
@@ -21,11 +22,13 @@ export default async function HashtagPage({ params }: HashtagPageProps) {
     redirect("/login")
   }
 
-  const initialShouts = await getShoutsByHashtag(decodedName, 10, 0)
+  const hashtag = await getHashtagByName(decodedName)
 
-  if (initialShouts.length === 0) {
+  if (!hashtag) {
     notFound()
   }
+
+  const initialShouts = await getShoutsByHashtag(hashtag.name, 10, 0)
 
   return (
     <SidebarInset>
@@ -33,15 +36,19 @@ export default async function HashtagPage({ params }: HashtagPageProps) {
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="md:hidden" />
           <Hash className="h-5 w-5 text-purple-700" />
-          <h1 className="text-xl font-bold">{decodedName}</h1>
+          <h1 className="text-xl font-bold">#{hashtag.name}</h1>
         </div>
       </header>
       <div className="container max-w-2xl mx-auto px-4 py-4">
-        <InfiniteScrollShoutList
-          initialShouts={initialShouts}
-          userId={user.id}
-          hashtagName={decodedName}
-        />
+        {initialShouts.length === 0 ? (
+          <p className="py-12 text-center text-muted-foreground">No shouts with this hashtag yet.</p>
+        ) : (
+          <InfiniteScrollShoutList
+            initialShouts={initialShouts}
+            userId={user.id}
+            hashtagName={hashtag.name}
+          />
+        )}
       </div>
     </SidebarInset>
   )

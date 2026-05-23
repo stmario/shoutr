@@ -102,7 +102,7 @@ export function ComposeShout({ username, avatarUrl, onShoutCreated, variant = "c
           </Avatar>
           <div className="flex-1">
             <MentionAutocompleteTextarea
-              placeholder="What's happening? Use @username to mention someone."
+              placeholder="What's happening? @mention someone or #tag a topic."
               className="border-0 focus-visible:ring-0 resize-none text-lg"
               value={shoutContent}
               onChange={handleShoutChange}

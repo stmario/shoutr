@@ -91,7 +91,7 @@ export function NewShoutForm({ user }: NewShoutFormProps) {
             <div className="flex-1">
               <MentionAutocompleteTextarea
                 name="content"
-                placeholder="What's happening? Use @username to mention someone."
+                placeholder="What's happening? @mention someone or #tag a topic."
                 className="border-0 focus-visible:ring-0 resize-none text-lg min-h-[100px]"
                 value={content}
                 onChange={handleContentChange}

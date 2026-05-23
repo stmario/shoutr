@@ -55,7 +55,7 @@ export function CommentForm({ shoutId, onPosted }: CommentFormProps) {
       <MentionAutocompleteTextarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder="Write a comment… Use @username to mention someone."
+        placeholder="Write a comment… @mention someone or #tag a topic."
         className="min-h-[80px] resize-none mb-2"
         maxLength={500}
         disabled={isSubmitting}

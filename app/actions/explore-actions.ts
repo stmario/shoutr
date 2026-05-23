@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { users, shouts, hashtags, shoutHashtags, follows, comments, reshouts } from "@/lib/schema"
+import { normalizeHashtagName } from "@/lib/mentions"
 import { eq, and, desc, count, sql, ilike, ne } from "drizzle-orm"
 import { getCurrentUser } from "@/lib/auth"
 
@@ -196,6 +197,9 @@ export async function getTrendingHashtags(limit = 10) {
 // Get shouts by hashtag with pagination
 export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset = 0) {
   try {
+    const normalized = normalizeHashtagName(hashtagName)
+    if (!normalized) return []
+
     const currentUser = await getCurrentUser()
     const blockAuthor = currentUser
       ? sql`NOT EXISTS (
@@ -222,7 +226,7 @@ export async function getShoutsByHashtag(hashtagName: string, limit = 20, offset
       .innerJoin(users, eq(shouts.user_id, users.id))
       .innerJoin(shoutHashtags, eq(shouts.id, shoutHashtags.shout_id))
       .innerJoin(hashtags, eq(shoutHashtags.hashtag_id, hashtags.id))
-      .where(and(eq(hashtags.name, hashtagName), blockAuthor))
+      .where(and(sql`LOWER(${hashtags.name}) = ${normalized}`, blockAuthor))
       .leftJoin(comments, eq(shouts.id, comments.shout_id))
       .leftJoin(reshouts, eq(shouts.id, reshouts.shout_id))
       .groupBy(

@@ -3,6 +3,7 @@
 import { db, executeQuery } from "@/lib/db"
 import { normalizeImageUrl } from "@/lib/media-url"
 import { shouts, hashtags, shoutHashtags, reshouts, comments, users } from "@/lib/schema"
+import { linkHashtagsToShout } from "@/lib/shout-hashtags"
 import { eq, and, desc, sql, count } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getCurrentUser } from "./auth"
@@ -310,39 +311,8 @@ export async function createShout(content: string, imageUrl?: string) {
       [currentUser.id, trimmedContent || "", imageParsed.value],
     )
 
-    // Extract hashtags from content
-    const hashtags = trimmedContent.match(/#(\w+)/g) || []
-
-    if (hashtags.length > 0 && result[0]?.id) {
-      const shoutId = result[0].id
-
-      // Process each hashtag
-      for (const tag of hashtags) {
-        const hashtagName = tag.substring(1) // Remove the # symbol
-
-        // Insert or get hashtag
-        const hashtagResult = await executeQuery(
-          `
-          INSERT INTO hashtags (name)
-          VALUES ($1)
-          ON CONFLICT (name) DO UPDATE SET name = $1
-          RETURNING id
-        `,
-          [hashtagName],
-        )
-
-        const hashtagId = hashtagResult[0]?.id
-
-        // Create relationship between shout and hashtag
-        await executeQuery(
-          `
-          INSERT INTO shout_hashtags (shout_id, hashtag_id)
-          VALUES ($1, $2)
-          ON CONFLICT DO NOTHING
-        `,
-          [shoutId, hashtagId],
-        )
-      }
+    if (result[0]?.id) {
+      await linkHashtagsToShout(Number(result[0].id), trimmedContent)
     }
 
     return { success: true, shoutId: result[0]?.id }
@@ -376,36 +346,7 @@ export async function createShoutLegacy(userId: number, content: string, imageUr
 
     const shoutId = newShout.id
 
-    // Extract hashtags from content
-    const hashtagMatches = content.match(/#(\w+)/g) || []
-
-    // Insert hashtags and create relationships
-    if (hashtagMatches.length > 0) {
-      for (const tag of hashtagMatches) {
-        const hashtagName = tag.substring(1) // Remove the # symbol
-
-        // Insert hashtag if it doesn't exist
-        const [hashtagResult] = await db
-          .insert(hashtags)
-          .values({ name: hashtagName })
-          .onConflictDoUpdate({
-            target: hashtags.name,
-            set: { name: hashtagName },
-          })
-          .returning()
-
-        const hashtagId = hashtagResult.id
-
-        // Create relationship between shout and hashtag
-        await db
-          .insert(shoutHashtags)
-          .values({
-            shout_id: shoutId,
-            hashtag_id: hashtagId,
-          })
-          .onConflictDoNothing()
-      }
-    }
+    await linkHashtagsToShout(shoutId, content)
 
     revalidatePath("/")
     return {

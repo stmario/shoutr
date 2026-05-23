@@ -10,7 +10,7 @@ import {
   URL_IN_TEXT_RE,
 } from "@/lib/embed-url"
 import { MARKDOWN_IMAGE_RE } from "@/lib/shout-markdown"
-import { HASHTAG_OR_MENTION_RE } from "@/lib/mentions"
+import { HASHTAG_OR_MENTION_RE, normalizeHashtagName } from "@/lib/mentions"
 import { LinkPreviewCard } from "@/components/link-preview-card"
 
 type ShoutContentProps = {
@@ -116,8 +116,9 @@ function renderTextWithEntities(text: string, keyStart: number): ReactNode[] {
     }
     const token = match[0]
     if (token.startsWith("#")) {
+      const tagName = normalizeHashtagName(token)
       nodes.push(
-        <Link key={`h-${k++}`} href={`/hashtag/${token.substring(1)}`} className="text-purple-700 hover:underline">
+        <Link key={`h-${k++}`} href={`/hashtag/${tagName}`} className="text-purple-700 hover:underline">
           {token}
         </Link>,
       )
