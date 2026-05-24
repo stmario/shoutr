@@ -10,8 +10,24 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
 export const metadata = {
-  title: "Shoutr - Connect with friends",
-  description: "A social media platform for sharing your thoughts",
+  metadataBase: new URL("https://www.shoutr.io"),
+  title: "Shoutr — Self-governed crypto social",
+  description:
+    "Wallet-native social on Ethereum. Sign in with your wallet, post shouts, and stake SHOT to weight likes and help the community govern the feed.",
+  openGraph: {
+    title: "Shoutr — Self-governed crypto social",
+    description:
+      "Wallet-native social on Ethereum. Sign in with your wallet, post shouts, and stake SHOT to weight likes and help the community govern the feed.",
+    url: "https://www.shoutr.io",
+    siteName: "Shoutr",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Shoutr — Self-governed crypto social",
+    description:
+      "Wallet-native social on Ethereum. Sign in with your wallet, post shouts, and stake SHOT to weight likes and help the community govern the feed.",
+  },
   generator: "v0.dev",
   icons: {
     icon: [
