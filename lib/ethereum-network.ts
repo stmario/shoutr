@@ -32,6 +32,10 @@ export function getExplorerBaseUrl(chainId: number = getConfiguredChainId()): st
   return "https://etherscan.io"
 }
 
+export function getExplorerAddressUrl(address: string, chainId: number = getConfiguredChainId()): string {
+  return `${getExplorerBaseUrl(chainId)}/address/${address}`
+}
+
 /** Infer chain from RPC hostname/path so static Network matches the node. */
 export function chainIdForRpcUrl(rpcUrl: string): number {
   if (/sepolia/i.test(rpcUrl)) return 11155111

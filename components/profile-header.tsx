@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
-import { CalendarDays, Coins, MapPin, LinkIcon, Edit } from "lucide-react"
+import { CalendarDays, Coins, MapPin, LinkIcon, Edit, Wallet } from "lucide-react"
+import { getExplorerAddressUrl } from "@/lib/ethereum-network"
 import { Button } from "@/components/ui/button"
 import { FollowButton } from "@/components/follow-button"
 import { MessageButton } from "@/components/message-button"
@@ -92,6 +93,20 @@ export function ProfileHeader({ profile, isCurrentUser, stakedShot }: ProfileHea
                   className="text-purple-600 hover:underline"
                 >
                   {profile.website.replace(/^https?:\/\//, "")}
+                </a>
+              </div>
+            )}
+
+            {profile.wallet_address && (
+              <div className="flex items-center gap-1">
+                <Wallet className="h-4 w-4" />
+                <a
+                  href={getExplorerAddressUrl(profile.wallet_address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-600 hover:underline font-mono"
+                >
+                  {profile.wallet_address.slice(0, 6)}…{profile.wallet_address.slice(-4)}
                 </a>
               </div>
             )}
