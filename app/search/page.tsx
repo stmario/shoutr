@@ -1,9 +1,12 @@
+import type { Metadata } from "next"
+import Link from "next/link"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SearchBar } from "@/components/search-bar"
 import { InfiniteScrollResults } from "@/components/infinite-scroll-results"
 import { getCurrentUser } from "@/lib/auth"
 import { search } from "@/app/actions/explore-actions"
+import { buildPageMetadata, pageTitle, truncateText } from "@/lib/seo"
+import { cn } from "@/lib/utils"
 import { redirect } from "next/navigation"
 
 interface SearchPageProps {
@@ -13,23 +16,52 @@ interface SearchPageProps {
   }>
 }
 
+const SEARCH_TABS = [
+  { value: "all", label: "All" },
+  { value: "shout", label: "Shouts" },
+  { value: "user", label: "Users" },
+  { value: "hashtag", label: "Hashtags" },
+] as const
+
+type SearchTab = (typeof SEARCH_TABS)[number]["value"]
+
+function isSearchTab(value: string): value is SearchTab {
+  return SEARCH_TABS.some((tab) => tab.value === value)
+}
+
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const { q } = await searchParams
+  const query = q?.trim()
+
+  if (!query) {
+    return buildPageMetadata({
+      title: pageTitle("Search"),
+      description: "Search shouts, users, and hashtags on Shoutr.",
+      path: "/explore",
+    })
+  }
+
+  return buildPageMetadata({
+    title: pageTitle(`Search: ${query}`),
+    description: truncateText(`Find shouts, users, and hashtags matching "${query}" on Shoutr.`, 160),
+    path: `/search?q=${encodeURIComponent(query)}`,
+    noIndex: true,
+  })
+}
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const user = await getCurrentUser()
 
-  if (!user) {
-    redirect("/login")
-  }
-
   const { q, tab: tabParam } = await searchParams
   const query = q || ""
-  const tab = tabParam || "all"
+  const tab: SearchTab = tabParam && isSearchTab(tabParam) ? tabParam : "all"
 
   if (!query) {
     redirect("/explore")
   }
 
-  // Initial search results
-  const searchResults = await search(query, 10, 0, tab === "all" ? undefined : (tab as any))
+  const searchType = tab === "all" ? undefined : tab
+  const searchResults = await search(query, 10, 0, searchType)
 
   return (
     <SidebarInset>
@@ -44,59 +76,33 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <SearchBar initialQuery={query} />
         </div>
 
-        <Tabs defaultValue={tab} className="w-full">
-          <TabsList className="w-full justify-start mb-6 border-b rounded-none h-12">
-            <TabsTrigger
-              value="all"
-              className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-700 rounded-none"
-              asChild
+        <nav
+          className="inline-flex w-full items-center justify-start mb-6 border-b rounded-none h-12 text-muted-foreground"
+          aria-label="Search result types"
+        >
+          {SEARCH_TABS.map(({ value, label }) => (
+            <Link
+              key={value}
+              href={`/search?q=${encodeURIComponent(query)}&tab=${value}`}
+              aria-current={tab === value ? "page" : undefined}
+              className={cn(
+                "flex-1 inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-all rounded-none",
+                tab === value
+                  ? "border-b-2 border-purple-700 text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
             >
-              <a href={`/search?q=${encodeURIComponent(query)}&tab=all`}>All</a>
-            </TabsTrigger>
-            <TabsTrigger
-              value="shout"
-              className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-700 rounded-none"
-              asChild
-            >
-              <a href={`/search?q=${encodeURIComponent(query)}&tab=shout`}>Shouts</a>
-            </TabsTrigger>
-            <TabsTrigger
-              value="user"
-              className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-700 rounded-none"
-              asChild
-            >
-              <a href={`/search?q=${encodeURIComponent(query)}&tab=user`}>Users</a>
-            </TabsTrigger>
-            <TabsTrigger
-              value="hashtag"
-              className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-purple-700 rounded-none"
-              asChild
-            >
-              <a href={`/search?q=${encodeURIComponent(query)}&tab=hashtag`}>Hashtags</a>
-            </TabsTrigger>
-          </TabsList>
+              {label}
+            </Link>
+          ))}
+        </nav>
 
-          <TabsContent value="all">
-            <InfiniteScrollResults initialResults={searchResults} query={query} currentUserId={user.id} />
-          </TabsContent>
-
-          <TabsContent value="shout">
-            <InfiniteScrollResults initialResults={searchResults} query={query} type="shout" currentUserId={user.id} />
-          </TabsContent>
-
-          <TabsContent value="user">
-            <InfiniteScrollResults initialResults={searchResults} query={query} type="user" currentUserId={user.id} />
-          </TabsContent>
-
-          <TabsContent value="hashtag">
-            <InfiniteScrollResults
-              initialResults={searchResults}
-              query={query}
-              type="hashtag"
-              currentUserId={user.id}
-            />
-          </TabsContent>
-        </Tabs>
+        <InfiniteScrollResults
+          initialResults={searchResults}
+          query={query}
+          type={searchType}
+          currentUserId={user?.id}
+        />
       </div>
     </SidebarInset>
   )

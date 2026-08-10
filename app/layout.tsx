@@ -1,4 +1,5 @@
 import type React from "react"
+import type { Metadata } from "next"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -7,26 +8,24 @@ import { Toaster } from "@/components/ui/toaster"
 import { WalletSessionGuard } from "@/components/wallet-session-guard"
 import { CookieConsentProvider } from "@/components/cookie-consent-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, SITE_NAME, SITE_URL } from "@/lib/seo"
 import "./globals.css"
 
-export const metadata = {
-  metadataBase: new URL("https://www.shoutr.io"),
-  title: "Shoutr — Self-governed crypto social",
-  description:
-    "Wallet-native social on Ethereum. Sign in with your wallet, post shouts, and stake SHOT to weight likes and help the community govern the feed.",
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: DEFAULT_TITLE,
+  description: DEFAULT_DESCRIPTION,
   openGraph: {
-    title: "Shoutr — Self-governed crypto social",
-    description:
-      "Wallet-native social on Ethereum. Sign in with your wallet, post shouts, and stake SHOT to weight likes and help the community govern the feed.",
-    url: "https://www.shoutr.io",
-    siteName: "Shoutr",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Shoutr — Self-governed crypto social",
-    description:
-      "Wallet-native social on Ethereum. Sign in with your wallet, post shouts, and stake SHOT to weight likes and help the community govern the feed.",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
   },
   generator: "v0.dev",
   icons: {

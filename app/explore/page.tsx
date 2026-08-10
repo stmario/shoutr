@@ -1,10 +1,18 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { SearchBar } from "@/components/search-bar"
 import { TrendingHashtags } from "@/components/trending-hashtags"
 import { SuggestedUsers } from "@/components/suggested-users"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getTrendingHashtags, getSuggestedUsers } from "@/app/actions/explore-actions"
 import { getCurrentUser } from "@/lib/auth"
+import { buildPageMetadata, pageTitle } from "@/lib/seo"
+
+export const metadata: Metadata = buildPageMetadata({
+  title: pageTitle("Explore"),
+  description: "Discover trending hashtags, find people to follow, and search shouts, users, and hashtags on Shoutr.",
+  path: "/explore",
+})
 
 async function ExploreTrending() {
   const hashtags = await getTrendingHashtags(10)

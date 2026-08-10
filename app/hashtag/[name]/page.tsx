@@ -1,9 +1,11 @@
+import type { Metadata } from "next"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { InfiniteScrollShoutList } from "@/components/infinite-scroll-shout-list"
 import { getCurrentUser } from "@/lib/auth"
 import { getShoutsByHashtag } from "@/app/actions/explore-actions"
 import { getHashtagByName } from "@/app/actions/hashtag-actions"
-import { notFound, redirect } from "next/navigation"
+import { buildPageMetadata, pageTitle } from "@/lib/seo"
+import { notFound } from "next/navigation"
 import { Hash } from "lucide-react"
 
 interface HashtagPageProps {
@@ -12,15 +14,32 @@ interface HashtagPageProps {
   }>
 }
 
+export async function generateMetadata({ params }: HashtagPageProps): Promise<Metadata> {
+  const { name } = await params
+  const decodedName = decodeURIComponent(name)
+  const hashtag = await getHashtagByName(decodedName)
+
+  if (!hashtag) {
+    return buildPageMetadata({
+      title: pageTitle("Hashtag not found"),
+      description: "This hashtag could not be found on Shoutr.",
+      path: `/hashtag/${encodeURIComponent(decodedName)}`,
+      noIndex: true,
+    })
+  }
+
+  return buildPageMetadata({
+    title: pageTitle(`#${hashtag.name}`),
+    description: `Browse shouts tagged with #${hashtag.name} on Shoutr.`,
+    path: `/hashtag/${encodeURIComponent(hashtag.name)}`,
+  })
+}
+
 export default async function HashtagPage({ params }: HashtagPageProps) {
   const { name } = await params
   const decodedName = decodeURIComponent(name)
 
   const user = await getCurrentUser()
-
-  if (!user) {
-    redirect("/login")
-  }
 
   const hashtag = await getHashtagByName(decodedName)
 
@@ -45,7 +64,7 @@ export default async function HashtagPage({ params }: HashtagPageProps) {
         ) : (
           <InfiniteScrollShoutList
             initialShouts={initialShouts}
-            userId={user.id}
+            userId={user?.id}
             hashtagName={hashtag.name}
           />
         )}

@@ -12,7 +12,7 @@ interface InfiniteScrollResultsProps {
   initialResults: SearchResult[]
   query: string
   type?: "user" | "shout" | "hashtag"
-  currentUserId: number
+  currentUserId?: number
 }
 
 export function InfiniteScrollResults({ initialResults, query, type, currentUserId }: InfiniteScrollResultsProps) {

@@ -11,7 +11,7 @@ import type { SearchResult } from "@/app/actions/explore-actions"
 
 interface UserListProps {
   users: SearchResult[]
-  currentUserId: number
+  currentUserId?: number
 }
 
 export function UserList({ users, currentUserId }: UserListProps) {
@@ -62,15 +62,21 @@ export function UserList({ users, currentUserId }: UserListProps) {
               </Link>
               <div className="text-sm text-muted-foreground">@{user.username}</div>
             </div>
-            <Button
-              size="sm"
-              className={followingState[user.id] ? "" : "bg-purple-700 hover:bg-purple-800"}
-              variant={followingState[user.id] ? "outline" : "default"}
-              onClick={() => handleFollow(user.id)}
-              disabled={loadingState[user.id] || followingState[user.id]}
-            >
-              {followingState[user.id] ? "Following" : "Follow"}
-            </Button>
+            {currentUserId ? (
+              <Button
+                size="sm"
+                className={followingState[user.id] ? "" : "bg-purple-700 hover:bg-purple-800"}
+                variant={followingState[user.id] ? "outline" : "default"}
+                onClick={() => handleFollow(user.id)}
+                disabled={loadingState[user.id] || followingState[user.id]}
+              >
+                {followingState[user.id] ? "Following" : "Follow"}
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" asChild>
+                <Link href="/login">Follow</Link>
+              </Button>
+            )}
           </div>
         </Card>
       ))}

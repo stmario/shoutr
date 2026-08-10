@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { ProfileHeader } from "@/components/profile-header"
@@ -12,6 +13,7 @@ import {
 } from "@/app/actions/profile"
 import type { Shout } from "@/app/actions/shouts"
 import { getCurrentUser } from "@/app/actions/auth"
+import { buildPageMetadata, pageTitle, truncateText } from "@/lib/seo"
 import { notFound } from "next/navigation"
 import { BadgeCheck } from "lucide-react"
 
@@ -19,6 +21,31 @@ interface ProfilePageProps {
   params: Promise<{
     username: string
   }>
+}
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params
+  const profile = await getUserProfile(username)
+
+  if (!profile || profile.profile_blocked_viewer) {
+    return buildPageMetadata({
+      title: pageTitle("Profile not found"),
+      description: "This profile could not be found on Shoutr.",
+      path: `/profile/${encodeURIComponent(username)}`,
+      noIndex: true,
+    })
+  }
+
+  const description = profile.bio
+    ? truncateText(profile.bio, 160)
+    : `View ${profile.username}'s shouts and activity on Shoutr.`
+
+  return buildPageMetadata({
+    title: pageTitle(profile.username),
+    description,
+    path: `/profile/${encodeURIComponent(profile.username)}`,
+    imageUrl: profile.avatar_url,
+  })
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
